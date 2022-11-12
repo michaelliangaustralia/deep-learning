@@ -44,5 +44,6 @@ def sequences_to_dict(sequences: List[List[str]]):
 
     num_sentences, vocab_size = len(sequences), len(unique_words)
 
+    # TODO continue here from https://github.com/CaptainE/RNN-LSTM-in-numpy/blob/master/RNN_LSTM_from_scratch.ipynb
     
     IPython.embed()

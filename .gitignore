@@ -1,1 +1,3 @@
 projects/asr_finetune_w2v2/outputs/*
+
+*/__pycache__/*
