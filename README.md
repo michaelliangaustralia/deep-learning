@@ -6,3 +6,4 @@ Monorepo for all deep learning related code intended purely for educational and 
 
 All project specific code exists in the `projects` folder.
 - `audio_classification` - Freesound audio classification Kaggle challenge 2019.
+- `asr_finetune_w2v2` - English ASR by finetuning Meta's Wav2Vec2 on various datasets.

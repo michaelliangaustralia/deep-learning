@@ -1,0 +1,10 @@
+# ASR Finetune Wav2Vec2
+
+Finetuning Meta's Wav2Vec2 on english data
+
+## Experiments
+
+| Model      | Data | Description | Performance |
+| ----------- | ----------- | ----------- | ----------- |
+| w2v2-base-libri-100 | Librispeech 100 | w2v2-base finetuned on libri 100 | {'wer': 0.9999767027928692, 'mer': 0.9999767027928692, 'wil': 0.9999999636094858, 'wip': 3.6390514106231116e-08, 'hits': 5, 'substitutions': 3196, 'deletions': 211417, 'insertions': 0}, {'wer': 1.0, 'mer': 1.0, 'wil': 1.0, 'wip': 0.0, 'hits': 0, 'substitutions': 1496, 'deletions': 79292, 'insertions': 0}, {'wer': 0.9999860344947978, 'mer': 0.9999860344947978, 'wil': 0.9999999857640111, 'wip': 1.4235988993018032e-08, 'hits': 1, 'substitutions': 980, 'deletions': 70624, 'insertions': 0}, {'wer': 0.999950114736107, 'mer': 0.999950114736107, 'wil': 0.9999998574706745, 'wip': 1.4252932540870283e-07, 'hits': 1, 'substitutions': 349, 'deletions': 19696, 'insertions': 0}, {'wer': 1.0, 'mer': 1.0, 'wil': 1.0, 'wip': 0.0, 'hits': 0, 'substitutions': 991, 'deletions': 59183, 'insertions': 0}
+| w2v2-base-libri-cv-3000 | libri 360+ libri100 + common voice | w2v2-base with added decoder layer finetuned on libri 360 + 100 + cv | {'wer': 0.44346932712779125, 'mer': 0.3955069823922283, 'wil': 0.5772308886864093, 'wip': 0.42276911131359074, 'hits': 54758, 'substitutions': 23235, 'deletions': 2795, 'insertions': 9797}, {'wer': 0.6181551567627959, 'mer': 0.5741879410543794, 'wil': 0.7782165830436554, 'wip': 0.22178341695634465, 'hits': 32825, 'substitutions': 29540, 'deletions': 9240, 'insertions': 5483}, {'wer': 0.5887957697296219, 'mer': 0.5442180007377352, 'wil': 0.748467412406957, 'wip': 0.251532587593043, 'hits': 9885, 'substitutions': 7852, 'deletions': 2309, 'insertions': 1642}, {'wer': 0.6595207232359491, 'mer': 0.5995679170884259, 'wil': 0.80357481927486, 'wip': 0.19642518072513998, 'hits': 26505, 'substitutions': 26914, 'deletions': 6755, 'insertions': 6017}, {'wer': 0.5128701106705169, 'mer': 0.45616535994297935, 'wil': 0.6533088890686909, 'wip': 0.34669111093130917, 'hits': 44254, 'substitutions': 24797, 'deletions': 3326, 'insertions': 8997}
