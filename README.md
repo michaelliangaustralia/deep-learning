@@ -1,4 +1,8 @@
-# primitives-neural-network
-neural network using numpy
+# Deep Learning Primitives
 
-https://towardsdatascience.com/lets-code-a-neural-network-in-plain-numpy-ae7e74410795
+Monorepo for all deep learning related code intended purely for educational and experimental purposes.
+
+## Projects
+
+All project specific code exists in the `projects` folder.
+- `audio_classification` - Freesound audio classification Kaggle challenge 2019.
