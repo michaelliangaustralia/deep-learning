@@ -6,6 +6,7 @@ import torch
 from collections import OrderedDict
 from dataclasses import dataclass, fields
 
+
 class ModelOutput(OrderedDict):
     """
     Base class for all model outputs as dataclass. Has a `__getitem__` that allows indexing by integer or slice (like a
@@ -24,10 +25,14 @@ class ModelOutput(OrderedDict):
         if not len(class_fields):
             raise ValueError(f"{self.__class__.__name__} has no fields.")
         if not all(field.default is None for field in class_fields[1:]):
-            raise ValueError(f"{self.__class__.__name__} should not have more than one required field.")
+            raise ValueError(
+                f"{self.__class__.__name__} should not have more than one required field."
+            )
 
         first_field = getattr(self, class_fields[0].name)
-        other_fields_are_none = all(getattr(self, field.name) is None for field in class_fields[1:])
+        other_fields_are_none = all(
+            getattr(self, field.name) is None for field in class_fields[1:]
+        )
 
         if other_fields_are_none and not is_tensor(first_field):
             if isinstance(first_field, dict):
@@ -62,16 +67,24 @@ class ModelOutput(OrderedDict):
                     self[field.name] = v
 
     def __delitem__(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``__delitem__`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``__delitem__`` on a {self.__class__.__name__} instance."
+        )
 
     def setdefault(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``setdefault`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``setdefault`` on a {self.__class__.__name__} instance."
+        )
 
     def pop(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``pop`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``pop`` on a {self.__class__.__name__} instance."
+        )
 
     def update(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``update`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``update`` on a {self.__class__.__name__} instance."
+        )
 
     def __getitem__(self, k):
         if isinstance(k, str):
@@ -97,6 +110,7 @@ class ModelOutput(OrderedDict):
         Convert self to a tuple containing all the attributes/keys that are not `None`.
         """
         return tuple(self[k] for k in self.keys())
+
 
 @dataclass
 class CausalLMOutput(ModelOutput):
@@ -139,11 +153,13 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
                 "or define `vocab_size` of your model's configuration."
             )
         output_hidden_size = (
-            config.output_hidden_size if hasattr(config, "add_adapter") and config.add_adapter else config.hidden_size
+            config.output_hidden_size
+            if hasattr(config, "add_adapter") and config.add_adapter
+            else config.hidden_size
         )
         self.rnn = nn.LSTM(output_hidden_size, output_hidden_size)
-        self.fc = nn.Linear(output_hidden_size, output_hidden_size)  
-        self.relu = nn.ReLU()      
+        self.fc = nn.Linear(output_hidden_size, output_hidden_size)
+        self.relu = nn.ReLU()
         self.lm_head = nn.Linear(output_hidden_size, config.vocab_size)
 
         # Initialize weights and apply final processing
@@ -185,7 +201,9 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
             config.vocab_size - 1]`.
         """
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
 
         outputs = self.wav2vec2(
             input_values,
@@ -205,13 +223,19 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
         if labels is not None:
 
             if labels.max() >= self.config.vocab_size:
-                raise ValueError(f"Label values must be <= vocab_size: {self.config.vocab_size}")
+                raise ValueError(
+                    f"Label values must be <= vocab_size: {self.config.vocab_size}"
+                )
 
             # retrieve loss input_lengths from attention_mask
             attention_mask = (
-                attention_mask if attention_mask is not None else torch.ones_like(input_values, dtype=torch.long)
+                attention_mask
+                if attention_mask is not None
+                else torch.ones_like(input_values, dtype=torch.long)
             )
-            input_lengths = self._get_feat_extract_output_lengths(attention_mask.sum(-1)).to(torch.long)
+            input_lengths = self._get_feat_extract_output_lengths(
+                attention_mask.sum(-1)
+            ).to(torch.long)
 
             # assuming that padded tokens are filled with -100
             # when not being attended to
@@ -220,7 +244,9 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
             flattened_targets = labels.masked_select(labels_mask)
 
             # ctc_loss doesn't support fp16
-            log_probs = nn.functional.log_softmax(logits, dim=-1, dtype=torch.float32).transpose(0, 1)
+            log_probs = nn.functional.log_softmax(
+                logits, dim=-1, dtype=torch.float32
+            ).transpose(0, 1)
 
             with torch.backends.cudnn.flags(enabled=False):
                 loss = nn.functional.ctc_loss(
@@ -238,5 +264,8 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
             return ((loss,) + output) if loss is not None else output
 
         return CausalLMOutput(
-            loss=loss, logits=logits, hidden_states=outputs.hidden_states, attentions=outputs.attentions
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
         )

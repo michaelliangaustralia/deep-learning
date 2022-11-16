@@ -3,6 +3,7 @@ import numpy as np
 
 import IPython
 
-sequences = utils.generate_dataset(n_sequences = 100)
+sequences = utils.generate_dataset(n_sequences=100)
 
-_ = utils.sequences_to_dict(sequences)
+word_to_idx, idx_to_word, num_sequences, vocab_size = utils.sequences_to_dict(sequences)
+IPython.embed()

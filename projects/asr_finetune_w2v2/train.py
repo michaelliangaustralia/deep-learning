@@ -1,4 +1,4 @@
-''' TODO ways to push this further
+""" TODO ways to push this further
 - LM - nlp
 - OOV - nlp
 - punctuation model - nlp
@@ -7,16 +7,17 @@
 - rnnt version, AED version
 - bigger model - get an intuition for speed vs accuracy
 - more data - get an intuition for speed vs accuracy
-'''
+"""
 
 from comet_ml import Experiment
-with open('../comet_api_key.txt') as f:
+
+with open("../comet_api_key.txt") as f:
     lines = f.readlines()
     experiment = Experiment(
         api_key=lines[0],
         project_name="michaelliang-dev",
         workspace="assemblyai",
-)
+    )
 
 import datasets
 import transformers
@@ -30,9 +31,9 @@ import json
 
 # Dataset
 # libri_train = datasets.load_from_disk('data/libri_train')
-libri_eval = datasets.load_from_disk('data/libri_eval')
+libri_eval = datasets.load_from_disk("data/libri_eval")
 # cv_train = datasets.load_from_disk('data/cv_train')
-giga_train = datasets.load_from_disk('data/giga_train')
+giga_train = datasets.load_from_disk("data/giga_train")
 train_dataset = datasets.concatenate_datasets([giga_train])
 
 # Vocab
@@ -49,40 +50,57 @@ train_dataset = datasets.concatenate_datasets([giga_train])
 # vocab_dict["[UNK]"] = len(vocab_dict) # model can deal with unknown tokens
 # vocab_dict["[PAD]"] = len(vocab_dict) # blank token
 
-with open('vocab_en.json') as f:
+with open("vocab_en.json") as f:
     vocab = json.load(f)
 
 # Tokenizer
-''' Decodes model outputs to text
-'''
-tokenizer = transformers.Wav2Vec2CTCTokenizer("./vocab_en.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
+""" Decodes model outputs to text
+"""
+tokenizer = transformers.Wav2Vec2CTCTokenizer(
+    "./vocab_en.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|"
+)
 
 # Feature extractor
-''' Encodes speech signal to model input format
+""" Encodes speech signal to model input format
 
 Source code: https://github.com/huggingface/transformers/blob/v4.21.2/src/transformers/models/wav2vec2/feature_extraction_wav2vec2.py#L31
 
 Padding, formatting inputs, normalising to zero mean and unit variance
 
-'''
-feature_extractor = transformers.Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True, return_attention_mask=False)
+"""
+feature_extractor = transformers.Wav2Vec2FeatureExtractor(
+    feature_size=1,
+    sampling_rate=16000,
+    padding_value=0.0,
+    do_normalize=True,
+    return_attention_mask=False,
+)
 
 # Processor
-''' Wrapper of tokenizer and feature extractor
-'''
-processor = transformers.Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
+""" Wrapper of tokenizer and feature extractor
+"""
+processor = transformers.Wav2Vec2Processor(
+    feature_extractor=feature_extractor, tokenizer=tokenizer
+)
 
 # Preprocess dataset
 def prepare_dataset(batch):
-    batch["input_values"] = processor(batch["input_values"], sampling_rate=16000).input_values[0] # feature extractor (1-1 map)
+    batch["input_values"] = processor(
+        batch["input_values"], sampling_rate=16000
+    ).input_values[
+        0
+    ]  # feature extractor (1-1 map)
 
     with processor.as_target_processor():
-        batch["labels"] = processor(batch["labels"]) # tokenizer (1-1 map)
+        batch["labels"] = processor(batch["labels"])  # tokenizer (1-1 map)
 
     return batch
-    
+
+
 train_dataset = train_dataset.map(prepare_dataset, num_proc=16)
-libri_eval = libri_eval.map(prepare_dataset, remove_columns=libri_eval.column_names, num_proc=16)
+libri_eval = libri_eval.map(
+    prepare_dataset, remove_columns=libri_eval.column_names, num_proc=16
+)
 
 # Data Collator
 @dataclass
@@ -118,11 +136,17 @@ class DataCollatorCTCWithPadding:
     pad_to_multiple_of: Optional[int] = None
     pad_to_multiple_of_labels: Optional[int] = None
 
-    def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+    def __call__(
+        self, features: List[Dict[str, Union[List[int], torch.Tensor]]]
+    ) -> Dict[str, torch.Tensor]:
         # split inputs and labels since they have to be of different lenghts and need
         # different padding methods
-        input_features = [{"input_values": feature["input_values"]} for feature in features]
-        label_features = [{"input_ids": feature["labels"]['input_ids']} for feature in features]
+        input_features = [
+            {"input_values": feature["input_values"]} for feature in features
+        ]
+        label_features = [
+            {"input_ids": feature["labels"]["input_ids"]} for feature in features
+        ]
 
         batch = self.processor.pad(
             input_features,
@@ -141,21 +165,27 @@ class DataCollatorCTCWithPadding:
             )
 
         # replace padding with -100 to ignore loss correctly
-        labels = labels_batch["input_ids"].masked_fill(labels_batch.attention_mask.ne(1), -100)
+        labels = labels_batch["input_ids"].masked_fill(
+            labels_batch.attention_mask.ne(1), -100
+        )
 
         batch["labels"] = labels
 
         return batch
+
 
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
 # Metrics
 wer_metric = datasets.load_metric("wer")
 
+
 def compute_metrics(pred):
     pred_logits = pred.predictions
     pred_ids = np.argmax(pred_logits, axis=-1)
-    pred.label_ids[pred.label_ids == -100] = processor.tokenizer.pad_token_id # replace all -100's with pad_token_id (29)
+    pred.label_ids[
+        pred.label_ids == -100
+    ] = processor.tokenizer.pad_token_id  # replace all -100's with pad_token_id (29)
 
     pred_str = processor.batch_decode(pred_ids)
 
@@ -163,25 +193,26 @@ def compute_metrics(pred):
 
     wer = wer_metric.compute(predictions=pred_str, references=label_str)
 
-    return {"wer":wer}
+    return {"wer": wer}
+
 
 model = Wav2Vec2ForCTC.from_pretrained(
     "facebook/wav2vec2-base",
     ctc_loss_reduction="mean",
-    pad_token_id=processor.tokenizer.pad_token_id
+    pad_token_id=processor.tokenizer.pad_token_id,
 )
 
 model.freeze_feature_encoder()
 
 training_args = transformers.TrainingArguments(
-    output_dir='outputs/',
+    output_dir="outputs/",
     group_by_length=False,
     per_device_train_batch_size=32,
     dataloader_num_workers=16,
     evaluation_strategy="steps",
     num_train_epochs=10,
-    fp16=True, # false for CPU
-    gradient_checkpointing=True, 
+    fp16=True,  # false for CPU
+    gradient_checkpointing=True,
     save_steps=5000,
     eval_steps=5000,
     logging_steps=500,
@@ -189,10 +220,10 @@ training_args = transformers.TrainingArguments(
     weight_decay=0.005,
     warmup_steps=1000,
     save_total_limit=10,
-    no_cuda=False, # train on CPU 
+    no_cuda=False,  # train on CPU
 )
 
-trainer= transformers.Trainer(
+trainer = transformers.Trainer(
     model=model,
     data_collator=data_collator,
     args=training_args,
