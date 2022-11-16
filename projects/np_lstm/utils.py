@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import numpy as np
 import collections
 from torch.utils import data
@@ -120,3 +120,34 @@ def create_datasets(sequences: List[List[str]], dataset_class: Dataset, p_train:
     test_set = dataset_class(inputs_test, targets_test)
 
     return training_set, validation_set, test_set
+
+def one_hot_encode(idx: int, vocab_size: int) -> np.ndarray:
+    """One-hot encodes a single word given its index and the size of the vocabulary.
+    
+    Args:
+        idx (int): the index of the given word
+        vocab_size (int): the size of the vocabulary
+    
+    Returns:
+        one_hot (np.ndarray): A zero'd 1-D numpy array of length vocab_size with value
+        1.0 at the given index.
+    """
+    one_hot = np.zeros(vocab_size)
+    one_hot[idx] = 1.0
+    return one_hot
+
+
+def one_hot_encode_sequence(sequence: List, vocab_size: int, word_to_idx: Dict) -> np.ndarray:
+    """One-hot encodes a sequence of words given a fixed vocabulary size.
+    
+    Args:
+        sequence (List): List of words to encode.
+        vocab_size (int): Size of the vocabulary.
+        word_to_idx (Dict): Dictionary mapping words to indices.
+     
+    Returns:
+        encoding (np.ndarray): a 3-D numpy array of shape (num words, vocab size, 1).
+    """
+    encoding = np.array([one_hot_encode(word_to_idx[word], vocab_size) for word in sequence])
+    encoding = encoding.reshape(encoding.shape[0], encoding.shape[1], 1)
+    return encoding
