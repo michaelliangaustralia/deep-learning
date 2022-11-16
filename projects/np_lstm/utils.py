@@ -151,3 +151,86 @@ def one_hot_encode_sequence(sequence: List, vocab_size: int, word_to_idx: Dict) 
     encoding = np.array([one_hot_encode(word_to_idx[word], vocab_size) for word in sequence])
     encoding = encoding.reshape(encoding.shape[0], encoding.shape[1], 1)
     return encoding
+
+def _init_orthogonal(param):
+    """Initializes weight parameters orthogonally.
+    
+    Refer to this paper for an explanation of this initialization:
+    https://arxiv.org/abs/1312.6120.
+    """
+    if param.ndim < 2:
+        raise ValueError("Only parameters with 2 or more dimensions are supported.")
+    rows, cols = param.shape
+    new_param = np.random.randn(rows, cols)
+    if rows < cols:
+        new_param = new_param.T
+    q, r = np.linalg.qr(new_param)
+    d = np.diag(r, 0)
+    ph = np.sign(d)
+    q *= ph
+    if rows < cols:
+        q = q.T
+    new_param = q
+    return new_param
+
+def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Initialize the RNN.
+
+    Args:
+        hidden_size (int): Size of the hidden layer.
+        vocab_size (int): Size of the hidden layer.
+
+    Returns:
+        weight_matrix_input (np.ndarray): weight matrix of the input-rnn interface.
+        weight_matrix_rnn (np.ndarray): weight matrix of the rnn-rnn interface.
+        weight_matrix_output (np.ndarray): weight matrix of the rnn-output interface.
+        b_hidden (np.ndarray): bias matrix of the rnn.
+        b_out (np.ndarray): bias matrix of the rnn-output interface.
+    """
+    weight_matrix_input = np.zeros((hidden_size, vocab_size))
+    weight_matrix_rnn = np.zeros((hidden_size, hidden_size))
+    weight_matrix_output = np.zeros((vocab_size, hidden_size))
+
+    b_hidden = np.zeros((hidden_size, 1))
+    b_out = np.zeros((vocab_size, 1))
+
+    weight_matrix_input = _init_orthogonal(weight_matrix_input)
+    weight_matrix_rnn = _init_orthogonal(weight_matrix_rnn)
+    weight_matrix_output = _init_orthogonal(weight_matrix_output)
+
+    return weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out
+
+def sigmoid(x, derivative: bool = False):
+    """Sigmoid activation function.
+
+    Args:
+        x: Input values.
+        derivative (bool): Will return derivative if True.
+
+    Returns:
+        f: Input with sigmoid activation function applied over it.
+    """
+    x_safe = x + 1e-12
+    f = 1 / (1 + np.exp(-x_safe))
+    if derivative:
+        return f * (1 - f)
+    else:
+        return f
+
+def tanh(x, derivative: bool = False):
+    """Tanh activation function.
+
+    Args:
+        x: the array where the function is applied
+        derivative: if set to True will return the derivative instead of the forward pass
+
+    Return:
+        
+    """
+    x_safe = x + 1e-12
+    f = (np.exp(x_safe)-np.exp(-x_safe))/(np.exp(x_safe)+np.exp(-x_safe))
+    
+    if derivative: # Return the derivative of the function evaluated at x
+        return 1-f**2
+    else: # Return the forward pass of the function at x
+        return f
