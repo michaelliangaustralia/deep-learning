@@ -1,7 +1,8 @@
 from typing import List, Tuple
 import numpy as np
 import collections
-import datasets
+from torch.utils import data
+
 
 import IPython
 
@@ -61,3 +62,61 @@ def sequences_to_dict(
         idx_to_word[idx] = word
 
     return word_to_idx, idx_to_word, num_sequences, vocab_size
+
+
+class Dataset(data.Dataset):
+    """Define Dataset class
+    """
+    def __init__(self, inputs, targets):
+        self.inputs = inputs
+        self.targets = targets
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __getitem__(self, index):
+        X = self.inputs[index]
+        y = self.targets[index]
+        return X, y
+
+
+def _get_inputs_targets_from_sequences(sequences):
+    inputs, targets = [], []
+    for sequence in sequences:
+        inputs.append(sequence[:-1])
+        targets.append(sequence[1:])
+    return inputs, targets
+    
+def create_datasets(sequences: List[List[str]], dataset_class: Dataset, p_train: int = 0.8, p_val: int = 0.1, p_test: int = 0.1):
+    """Create split dataset from input sequences.
+
+    Args:
+        sequences (List[List[str]]): Data sequences.
+        dataset_class (Dataset): Dataset class structure.
+        p_train (int): Percentage of dataset split to train.
+        p_val (int): Percentage of dataset split to validation.
+        p_test (int): Percentage of dataset split to test.
+    
+    Returns:
+        training_set (Dataset): Training partitioned dataset.
+        validation_set (Dataset): Validation partitioned dataset.
+        test_set (Dataset): Test partitioned dataset.
+    
+    """
+    num_train = int(len(sequences)*p_train)
+    num_val = int(len(sequences)*p_val)
+    num_test = int(len(sequences)*p_test)
+
+    sequences_train = sequences[:num_train]
+    sequences_val = sequences[num_train:num_train+num_val]
+    sequences_test = sequences[-num_test:]
+
+    inputs_train, targets_train = _get_inputs_targets_from_sequences(sequences_train)
+    inputs_val, targets_val = _get_inputs_targets_from_sequences(sequences_val)
+    inputs_test, targets_test = _get_inputs_targets_from_sequences(sequences_test)
+
+    training_set = dataset_class(inputs_train, targets_train)
+    validation_set = dataset_class(inputs_val, targets_val)
+    test_set = dataset_class(inputs_test, targets_test)
+
+    return training_set, validation_set, test_set
