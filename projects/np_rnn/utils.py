@@ -80,7 +80,7 @@ class Dataset(data.Dataset):
         return X, y
 
 
-def _get_inputs_targets_from_sequences(sequences):
+def _get_inputs_targets_from_sequences(sequences: np.ndarray) -> np.ndarray:
     inputs, targets = [], []
     for sequence in sequences:
         inputs.append(sequence[:-1])
@@ -152,7 +152,7 @@ def one_hot_encode_sequence(sequence: List, vocab_size: int, word_to_idx: Dict) 
     encoding = encoding.reshape(encoding.shape[0], encoding.shape[1], 1)
     return encoding
 
-def _init_orthogonal(param):
+def _init_orthogonal(param: np.ndarray) -> np.ndarray:
     """Initializes weight parameters orthogonally.
     
     Refer to this paper for an explanation of this initialization:
@@ -201,7 +201,7 @@ def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray,
 
     return weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out
 
-def sigmoid(x, derivative: bool = False):
+def sigmoid(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Sigmoid activation function.
 
     Args:
@@ -255,7 +255,7 @@ def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
         return f
 
 def forward_pass(inputs: np.ndarray, hidden_state: np.ndarray, params: Tuple[Dict, Dict, Dict, Dict, Dict]) -> Tuple[np.ndarray, np.ndarray]:
-    """Computes the forward pass of a vanilaa RNN.
+    """Computes the forward pass of a vanilla RNN.
     
     Args:
         inputs (np.ndarray): Sequence of inputs to be processed,
@@ -269,10 +269,53 @@ def forward_pass(inputs: np.ndarray, hidden_state: np.ndarray, params: Tuple[Dic
     weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
     outputs, hidden_states = [], []
     for inp in inputs:
-        IPython.embed()
         hidden_state = tanh(np.dot(weight_matrix_input, inp) + np.dot(weight_matrix_rnn, hidden_state) + b_hidden)
         output = softmax(np.dot(weight_matrix_output, hidden_state) + b_out)
         outputs.append(output)
         hidden_states.append(hidden_state)
     return outputs, hidden_states
 
+def clip_gradient_norm(grads: np.ndarray, max_norm: float = 0.25) -> np.ndarray:
+    """Clip gradients to avoid exploding gradients problem.
+    """
+    max_norm = float(max_norm)
+    total_norm = 0
+
+    for grad in grads:
+        grad_norm = np.sum(np.power(grad, 2))
+        total_norm += grad_norm
+    
+    total_norm = np.sqrt(total_norm)
+    
+    clip_coef = max_norm / (total_norm + 1e-6)
+    
+    if clip_coef < 1:
+        for grad in grads:
+            grad *= clip_coef
+    
+    return grads
+
+def backward_pass(inputs: np.ndarray, outputs: np.ndarray, hidden_states: np.ndarray, targets: np.ndarray, params: np.ndarray):
+    """Computes the backward pass of a vanilla RNN.
+    
+    Args:
+        inputs (np.ndarray): 
+        outputs (np.ndarray): 
+        hidden_states (np.ndarray): 
+        targets (np.ndarray): 
+        params (np.ndarray): 
+
+    Returns:
+        TODO
+    """
+
+    weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
+
+    d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = np.zeros_like(weight_matrix_input), np.zeros_like(weight_matrix_rnn), np.zeros_like(weight_matrix_output)
+
+    d_hidden_next = np.zeros_like(hidden_states[0])
+    loss = 0
+
+    for output in reversed(outputs):
+        print(output)
+        # TODO building the backward pass.
