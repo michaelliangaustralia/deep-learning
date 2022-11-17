@@ -221,8 +221,8 @@ def tanh(x, derivative: bool = False):
     """Tanh activation function.
 
     Args:
-        x: the array where the function is applied
-        derivative: if set to True will return the derivative instead of the forward pass
+        x: The array where the function is applied.
+        derivative: If set to True will return the derivative instead of the forward pass.
 
     Return:
         
@@ -233,4 +233,22 @@ def tanh(x, derivative: bool = False):
     if derivative: # Return the derivative of the function evaluated at x
         return 1-f**2
     else: # Return the forward pass of the function at x
+        return f
+
+def softmax(x, derivative: bool = False):
+    """Calculate the softmax of an array x.
+
+    Args:
+        x: The array where the function is applied.
+        derivative: If set to True will return the derivative instead of the forward pass.
+
+    Return:
+        
+    """
+    x_safe = x + 1e-12
+    f = np.exp(x_safe) / np.sum(np.exp(x_safe))
+
+    if derivative:
+        pass
+    else:
         return f
