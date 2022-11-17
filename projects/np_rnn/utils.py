@@ -190,6 +190,7 @@ def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray,
     weight_matrix_input = np.zeros((hidden_size, vocab_size))
     weight_matrix_rnn = np.zeros((hidden_size, hidden_size))
     weight_matrix_output = np.zeros((vocab_size, hidden_size))
+    # weight_matrix_output = np.zeros((hidden_size, vocab_size))
 
     b_hidden = np.zeros((hidden_size, 1))
     b_out = np.zeros((vocab_size, 1))
@@ -217,15 +218,15 @@ def sigmoid(x, derivative: bool = False):
     else:
         return f
 
-def tanh(x, derivative: bool = False):
+def tanh(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Tanh activation function.
 
     Args:
-        x: The array where the function is applied.
+        x (np.ndarray): The array where the function is applied.
         derivative: If set to True will return the derivative instead of the forward pass.
 
     Return:
-        
+        f (np.ndarray): Array with tanh function computed over it.
     """
     x_safe = x + 1e-12
     f = (np.exp(x_safe)-np.exp(-x_safe))/(np.exp(x_safe)+np.exp(-x_safe))
@@ -235,15 +236,15 @@ def tanh(x, derivative: bool = False):
     else: # Return the forward pass of the function at x
         return f
 
-def softmax(x, derivative: bool = False):
+def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Calculate the softmax of an array x.
 
     Args:
-        x: The array where the function is applied.
-        derivative: If set to True will return the derivative instead of the forward pass.
+        x (np.ndarray): The array where the function is applied.
+        derivative (bool): If set to True will return the derivative instead of the forward pass.
 
     Return:
-        
+        f (np.ndarray): Softmaxed array.
     """
     x_safe = x + 1e-12
     f = np.exp(x_safe) / np.sum(np.exp(x_safe))
@@ -252,3 +253,26 @@ def softmax(x, derivative: bool = False):
         pass
     else:
         return f
+
+def forward_pass(inputs: np.ndarray, hidden_state: np.ndarray, params: Tuple[Dict, Dict, Dict, Dict, Dict]) -> Tuple[np.ndarray, np.ndarray]:
+    """Computes the forward pass of a vanilaa RNN.
+    
+    Args:
+        inputs (np.ndarray): Sequence of inputs to be processed,
+        hidden_state (np.ndarray): Previous hidden state of the RNN.
+        params (Tuple[Dict, Dict, Dict, Dict, Dict]): Parameters of the RNN.
+
+    Returns:
+        outputs (np.ndarray): List of outputs of the RNN.
+        hidden_states (np.ndarray): List of RNN hidden states for each input.
+    """
+    weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
+    outputs, hidden_states = [], []
+    for inp in inputs:
+        IPython.embed()
+        hidden_state = tanh(np.dot(weight_matrix_input, inp) + np.dot(weight_matrix_rnn, hidden_state) + b_hidden)
+        output = softmax(np.dot(weight_matrix_output, hidden_state) + b_out)
+        outputs.append(output)
+        hidden_states.append(hidden_state)
+    return outputs, hidden_states
+

@@ -13,6 +13,15 @@ test_sentence = utils.one_hot_encode_sequence(['a', 'b'], vocab_size, word_to_id
 
 hidden_size = 50
 
-weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = utils.init_rnn(hidden_size, vocab_size)
+params = utils.init_rnn(hidden_size, vocab_size)
+
+test_input_sequence, test_target_sequence = training_set[0]
+test_input = utils.one_hot_encode_sequence(test_input_sequence, vocab_size, word_to_idx)
+test_target = utils.one_hot_encode_sequence(test_target_sequence, vocab_size, word_to_idx)
+
+hidden_state = np.zeros((hidden_size, 1))
+
+outputs, hidden_states = utils.forward_pass(test_input, hidden_state, params)
+
 
 IPython.embed()
