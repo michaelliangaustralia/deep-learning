@@ -130,7 +130,7 @@ def one_hot_encode(idx: int, vocab_size: int) -> np.ndarray:
     
     Returns:
         one_hot (np.ndarray): A zero'd 1-D numpy array of length vocab_size with value
-        1.0 at the given index.
+            1.0 at the given index.
     """
     one_hot = np.zeros(vocab_size)
     one_hot[idx] = 1.0
@@ -295,27 +295,68 @@ def clip_gradient_norm(grads: np.ndarray, max_norm: float = 0.25) -> np.ndarray:
     
     return grads
 
-def backward_pass(inputs: np.ndarray, outputs: np.ndarray, hidden_states: np.ndarray, targets: np.ndarray, params: np.ndarray):
+def backward_pass(inputs: np.ndarray, outputs: np.ndarray, hidden_states: np.ndarray, targets: np.ndarray, params: np.ndarray) -> Tuple[float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """Computes the backward pass of a vanilla RNN.
     
+    Compute gradient by -1 to the softmaxed probability of the output for the target index.
+
     Args:
-        inputs (np.ndarray): 
-        outputs (np.ndarray): 
-        hidden_states (np.ndarray): 
-        targets (np.ndarray): 
-        params (np.ndarray): 
+        inputs (np.ndarray): RNN inputs.
+        outputs (np.ndarray): RNN outputs.
+        hidden_states (np.ndarray): RNN hidden state.
+        targets (np.ndarray): Sample targets.
+        params (np.ndarray): RNN state.
 
     Returns:
-        TODO
+        loss (float): Loss computation for the set of outputs.
+        grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Gradient matrices
+            for weight matrices and biases.
     """
 
     weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
 
     d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = np.zeros_like(weight_matrix_input), np.zeros_like(weight_matrix_rnn), np.zeros_like(weight_matrix_output)
+    d_b_hidden, d_b_out = np.zeros_like(b_hidden), np.zeros_like(b_out)
 
     d_hidden_next = np.zeros_like(hidden_states[0])
     loss = 0
 
-    for output in reversed(outputs):
-        print(output)
-        # TODO building the backward pass.
+    for idx, output in enumerate(reversed(outputs)):
+        loss += -np.mean(np.log(output+1e-12) * targets[idx])
+
+        d_output = output.copy()
+        d_output[np.argmax(targets[idx])] -= 1
+
+        d_weight_matrix_output += np.dot(d_output, hidden_states[idx].T)
+        d_b_out += d_output
+
+        d_hidden = np.dot(weight_matrix_output.T, d_output) + d_hidden_next
+
+        d_f = tanh(hidden_states[idx], derivative=True) * d_hidden # ?
+        d_b_hidden += d_f 
+
+        d_weight_matrix_input += np.dot(d_f, inputs[idx].T)
+
+        d_weight_matrix_rnn += np.dot(d_f, hidden_states[idx-1].T)
+        d_hidden_next = np.dot(weight_matrix_rnn.T, d_f)
+    
+    grads = d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output, d_b_hidden, d_b_out
+
+    grads = clip_gradient_norm(grads)
+
+    return loss, grads
+
+def update_parameters(params: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray], grads: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray], lr: float = 1e-3) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Update parameters with gradient descent.
+    
+    Args:
+        params (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): State of RNN.
+        grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Gradient matrix of RNN.
+        lr (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Learning rate.
+
+    Returns:
+        grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Updated state of RNN.
+    """
+    for param, grad in zip(params, grads):
+        param -= lr * grad
+    return params

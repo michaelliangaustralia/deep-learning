@@ -23,4 +23,5 @@ hidden_state = np.zeros((hidden_size, 1))
 
 outputs, hidden_states = utils.forward_pass(test_input, hidden_state, params)
 
-_ = utils.backward_pass(test_input, outputs, hidden_states, test_target, params)
+loss, grads = utils.backward_pass(test_input, outputs, hidden_states, test_target, params)
+
