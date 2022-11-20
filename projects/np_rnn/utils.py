@@ -9,23 +9,24 @@ import IPython
 np.random.seed(42)
 
 
-def generate_dataset(n_sequences: int = 100) -> List[List[str]]:
+def generate_dataset(num_sequences: int = 100) -> List[List[str]]:
     """Generate sample dataset.
 
     Samples have a changing (between samples) but fixed number (within sample) of a's
     followed by b's followed by an EOS token.
 
     Args:
-        n_sequences (int): Number of data samples to generate.
+        num_sequences (int): Number of data samples to generate.
 
     Returns:
         samples (List): List of data samples.
     """
     samples = []
-    for _ in range(n_sequences):
+    for _ in range(num_sequences):
         num_tokens = np.random.randint(1, 10)
         sample = ["a"] * num_tokens + ["b"] * num_tokens + ["EOS"]
         samples.append(sample)
+
     return samples
 
 
@@ -65,8 +66,8 @@ def sequences_to_dict(
 
 
 class Dataset(data.Dataset):
-    """Define Dataset class
-    """
+    """Define Dataset class"""
+
     def __init__(self, inputs, targets):
         self.inputs = inputs
         self.targets = targets
@@ -86,8 +87,15 @@ def _get_inputs_targets_from_sequences(sequences: np.ndarray) -> np.ndarray:
         inputs.append(sequence[:-1])
         targets.append(sequence[1:])
     return inputs, targets
-    
-def create_datasets(sequences: List[List[str]], dataset_class: Dataset, p_train: int = 0.8, p_val: int = 0.1, p_test: int = 0.1):
+
+
+def create_datasets(
+    sequences: List[List[str]],
+    dataset_class: Dataset,
+    p_train: int = 0.8,
+    p_val: int = 0.1,
+    p_test: int = 0.1,
+):
     """Create split dataset from input sequences.
 
     Args:
@@ -96,19 +104,19 @@ def create_datasets(sequences: List[List[str]], dataset_class: Dataset, p_train:
         p_train (int): Percentage of dataset split to train.
         p_val (int): Percentage of dataset split to validation.
         p_test (int): Percentage of dataset split to test.
-    
+
     Returns:
         training_set (Dataset): Training partitioned dataset.
         validation_set (Dataset): Validation partitioned dataset.
         test_set (Dataset): Test partitioned dataset.
-    
+
     """
-    num_train = int(len(sequences)*p_train)
-    num_val = int(len(sequences)*p_val)
-    num_test = int(len(sequences)*p_test)
+    num_train = int(len(sequences) * p_train)
+    num_val = int(len(sequences) * p_val)
+    num_test = int(len(sequences) * p_test)
 
     sequences_train = sequences[:num_train]
-    sequences_val = sequences[num_train:num_train+num_val]
+    sequences_val = sequences[num_train : num_train + num_val]
     sequences_test = sequences[-num_test:]
 
     inputs_train, targets_train = _get_inputs_targets_from_sequences(sequences_train)
@@ -121,13 +129,14 @@ def create_datasets(sequences: List[List[str]], dataset_class: Dataset, p_train:
 
     return training_set, validation_set, test_set
 
+
 def one_hot_encode(idx: int, vocab_size: int) -> np.ndarray:
     """One-hot encodes a single word given its index and the size of the vocabulary.
-    
+
     Args:
         idx (int): the index of the given word
         vocab_size (int): the size of the vocabulary
-    
+
     Returns:
         one_hot (np.ndarray): A zero'd 1-D numpy array of length vocab_size with value
             1.0 at the given index.
@@ -137,24 +146,29 @@ def one_hot_encode(idx: int, vocab_size: int) -> np.ndarray:
     return one_hot
 
 
-def one_hot_encode_sequence(sequence: List, vocab_size: int, word_to_idx: Dict) -> np.ndarray:
+def one_hot_encode_sequence(
+    sequence: List, vocab_size: int, word_to_idx: Dict
+) -> np.ndarray:
     """One-hot encodes a sequence of words given a fixed vocabulary size.
-    
+
     Args:
         sequence (List): List of words to encode.
         vocab_size (int): Size of the vocabulary.
         word_to_idx (Dict): Dictionary mapping words to indices.
-     
+
     Returns:
         encoding (np.ndarray): a 3-D numpy array of shape (num words, vocab size, 1).
     """
-    encoding = np.array([one_hot_encode(word_to_idx[word], vocab_size) for word in sequence])
+    encoding = np.array(
+        [one_hot_encode(word_to_idx[word], vocab_size) for word in sequence]
+    )
     encoding = encoding.reshape(encoding.shape[0], encoding.shape[1], 1)
     return encoding
 
+
 def _init_orthogonal(param: np.ndarray) -> np.ndarray:
     """Initializes weight parameters orthogonally.
-    
+
     Refer to this paper for an explanation of this initialization:
     https://arxiv.org/abs/1312.6120.
     """
@@ -173,7 +187,10 @@ def _init_orthogonal(param: np.ndarray) -> np.ndarray:
     new_param = q
     return new_param
 
-def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+def init_rnn(
+    hidden_size: int, vocab_size: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Initialize the RNN.
 
     Args:
@@ -190,7 +207,6 @@ def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray,
     weight_matrix_input = np.zeros((hidden_size, vocab_size))
     weight_matrix_rnn = np.zeros((hidden_size, hidden_size))
     weight_matrix_output = np.zeros((vocab_size, hidden_size))
-    # weight_matrix_output = np.zeros((hidden_size, vocab_size))
 
     b_hidden = np.zeros((hidden_size, 1))
     b_out = np.zeros((vocab_size, 1))
@@ -200,6 +216,7 @@ def init_rnn(hidden_size: int, vocab_size: int) -> Tuple[np.ndarray, np.ndarray,
     weight_matrix_output = _init_orthogonal(weight_matrix_output)
 
     return weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out
+
 
 def sigmoid(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Sigmoid activation function.
@@ -218,6 +235,7 @@ def sigmoid(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     else:
         return f
 
+
 def tanh(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Tanh activation function.
 
@@ -229,12 +247,13 @@ def tanh(x: np.ndarray, derivative: bool = False) -> np.ndarray:
         f (np.ndarray): Array with tanh function computed over it.
     """
     x_safe = x + 1e-12
-    f = (np.exp(x_safe)-np.exp(-x_safe))/(np.exp(x_safe)+np.exp(-x_safe))
-    
-    if derivative: # Return the derivative of the function evaluated at x
-        return 1-f**2
-    else: # Return the forward pass of the function at x
+    f = (np.exp(x_safe) - np.exp(-x_safe)) / (np.exp(x_safe) + np.exp(-x_safe))
+
+    if derivative:  # Return the derivative of the function evaluated at x
+        return 1 - f**2
+    else:  # Return the forward pass of the function at x
         return f
+
 
 def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     """Calculate the softmax of an array x.
@@ -254,9 +273,14 @@ def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
     else:
         return f
 
-def forward_pass(inputs: np.ndarray, hidden_state: np.ndarray, params: Tuple[Dict, Dict, Dict, Dict, Dict]) -> Tuple[np.ndarray, np.ndarray]:
+
+def forward_pass(
+    inputs: np.ndarray,
+    hidden_state: np.ndarray,
+    params: Tuple[Dict, Dict, Dict, Dict, Dict],
+) -> Tuple[np.ndarray, np.ndarray]:
     """Computes the forward pass of a vanilla RNN.
-    
+
     Args:
         inputs (np.ndarray): Sequence of inputs to be processed,
         hidden_state (np.ndarray): Previous hidden state of the RNN.
@@ -266,38 +290,55 @@ def forward_pass(inputs: np.ndarray, hidden_state: np.ndarray, params: Tuple[Dic
         outputs (np.ndarray): List of outputs of the RNN.
         hidden_states (np.ndarray): List of RNN hidden states for each input.
     """
-    weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
+    (
+        weight_matrix_input,
+        weight_matrix_rnn,
+        weight_matrix_output,
+        b_hidden,
+        b_out,
+    ) = params
     outputs, hidden_states = [], []
     for inp in inputs:
-        hidden_state = tanh(np.dot(weight_matrix_input, inp) + np.dot(weight_matrix_rnn, hidden_state) + b_hidden)
+        hidden_state = tanh(
+            np.dot(weight_matrix_input, inp)
+            + np.dot(weight_matrix_rnn, hidden_state)
+            + b_hidden
+        )
         output = softmax(np.dot(weight_matrix_output, hidden_state) + b_out)
         outputs.append(output)
-        hidden_states.append(hidden_state)
+        hidden_states.append(hidden_state.copy())
     return outputs, hidden_states
 
+
 def clip_gradient_norm(grads: np.ndarray, max_norm: float = 0.25) -> np.ndarray:
-    """Clip gradients to avoid exploding gradients problem.
-    """
+    """Clip gradients to avoid exploding gradients problem."""
     max_norm = float(max_norm)
     total_norm = 0
 
     for grad in grads:
         grad_norm = np.sum(np.power(grad, 2))
         total_norm += grad_norm
-    
+
     total_norm = np.sqrt(total_norm)
-    
+
     clip_coef = max_norm / (total_norm + 1e-6)
-    
+
     if clip_coef < 1:
         for grad in grads:
             grad *= clip_coef
-    
+
     return grads
 
-def backward_pass(inputs: np.ndarray, outputs: np.ndarray, hidden_states: np.ndarray, targets: np.ndarray, params: np.ndarray) -> Tuple[float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+
+def backward_pass(
+    inputs: np.ndarray,
+    outputs: np.ndarray,
+    hidden_states: np.ndarray,
+    targets: np.ndarray,
+    params: np.ndarray,
+) -> Tuple[float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """Computes the backward pass of a vanilla RNN.
-    
+
     Compute gradient by -1 to the softmaxed probability of the output for the target index.
 
     Args:
@@ -313,42 +354,63 @@ def backward_pass(inputs: np.ndarray, outputs: np.ndarray, hidden_states: np.nda
             for weight matrices and biases.
     """
 
-    weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out = params
+    (
+        weight_matrix_input,
+        weight_matrix_rnn,
+        weight_matrix_output,
+        b_hidden,
+        b_out,
+    ) = params
 
-    d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = np.zeros_like(weight_matrix_input), np.zeros_like(weight_matrix_rnn), np.zeros_like(weight_matrix_output)
+    d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = (
+        np.zeros_like(weight_matrix_input),
+        np.zeros_like(weight_matrix_rnn),
+        np.zeros_like(weight_matrix_output),
+    )
     d_b_hidden, d_b_out = np.zeros_like(b_hidden), np.zeros_like(b_out)
 
     d_hidden_next = np.zeros_like(hidden_states[0])
     loss = 0
 
-    for idx, output in enumerate(reversed(outputs)):
-        loss += -np.mean(np.log(output+1e-12) * targets[idx])
+    for t in reversed(range(len(outputs))):
+        loss += -np.mean(np.log(outputs[t] + 1e-12) * targets[t])
 
-        d_output = output.copy()
-        d_output[np.argmax(targets[idx])] -= 1
+        d_output = outputs[t].copy()
+        d_output[np.argmax(targets[t])] -= 1
 
-        d_weight_matrix_output += np.dot(d_output, hidden_states[idx].T)
+        d_weight_matrix_output += np.dot(d_output, hidden_states[t].T)
         d_b_out += d_output
 
         d_hidden = np.dot(weight_matrix_output.T, d_output) + d_hidden_next
 
-        d_f = tanh(hidden_states[idx], derivative=True) * d_hidden # ?
-        d_b_hidden += d_f 
+        d_f = tanh(hidden_states[t], derivative=True) * d_hidden  # ?
+        d_b_hidden += d_f
 
-        d_weight_matrix_input += np.dot(d_f, inputs[idx].T)
+        d_weight_matrix_input += np.dot(d_f, inputs[t].T)
 
-        d_weight_matrix_rnn += np.dot(d_f, hidden_states[idx-1].T)
+        d_weight_matrix_rnn += np.dot(d_f, hidden_states[t - 1].T)
         d_hidden_next = np.dot(weight_matrix_rnn.T, d_f)
-    
-    grads = d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output, d_b_hidden, d_b_out
+
+    grads = (
+        d_weight_matrix_input,
+        d_weight_matrix_rnn,
+        d_weight_matrix_output,
+        d_b_hidden,
+        d_b_out,
+    )
 
     grads = clip_gradient_norm(grads)
 
     return loss, grads
 
-def update_parameters(params: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray], grads: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray], lr: float = 1e-3) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+def update_parameters(
+    params: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    grads: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    lr: float = 1e-3,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Update parameters with gradient descent.
-    
+
     Args:
         params (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): State of RNN.
         grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Gradient matrix of RNN.
@@ -360,3 +422,59 @@ def update_parameters(params: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarr
     for param, grad in zip(params, grads):
         param -= lr * grad
     return params
+
+
+def inference(
+    params: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    vocab_size: int,
+    hidden_size: int,
+    idx_to_word: collections.defaultdict,
+    word_to_idx: collections.defaultdict,
+    sentence: str = "",
+    num_generate: int = 4,
+):
+    """Runs inference over an input sentence.
+
+    Args:
+        params (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Network weights.
+        sentence (str): String with whitespace-separated tokens.
+        vocab_size (str): Size of vocabulary.
+        hidden_size (str): Size of hidden state.
+        num_generate (int): The number of tokens to generate.
+    """
+    sentence = sentence.split(" ")
+
+    sentence_one_hot = one_hot_encode_sequence(sentence, vocab_size, word_to_idx)
+
+    # Initialize hidden state as zeros
+    hidden_state = np.zeros((hidden_size, 1))
+
+    # Generate hidden state for sentence
+    outputs, hidden_states = forward_pass(sentence_one_hot, hidden_state, params)
+
+    # Output sentence
+    output_sentence = sentence
+
+    # Append first prediction
+    word = idx_to_word[np.argmax(outputs[-1])]
+    output_sentence.append(word)
+
+    # Forward pass
+    for i in range(num_generate):
+
+        # Get the latest prediction and latest hidden state
+        output = outputs[-1]
+        hidden_state = hidden_states[-1]
+
+        # Reshape our output to match the input shape of our forward pass
+        output = output.reshape(1, output.shape[0], output.shape[1])
+
+        # Forward pass
+        outputs, hidden_states = forward_pass(output, hidden_state, params)
+
+        # Compute the index the most likely word and look up the corresponding word
+        word = idx_to_word[np.argmax(outputs)]
+
+        output_sentence.append(word)
+
+    return output_sentence
