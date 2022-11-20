@@ -5,10 +5,10 @@ torch.random.manual_seed(3407)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Character-based Encoding
-''' Encodes text string into character-symbols
+""" Encodes text string into character-symbols
 
 We can also use TACOTRON2_WAVERNN_PHONE_LJSPEECH for phoneme based encoding.
-'''
+"""
 # symbols = '_-!\'(),.:;? abcdefghijklmnopqrstuvwxyz'
 # lookup = {s: i for i, s in enumerate(symbols)}
 # symbols = set(symbols)
@@ -17,7 +17,7 @@ We can also use TACOTRON2_WAVERNN_PHONE_LJSPEECH for phoneme based encoding.
 #     text = text.lower()
 #     return [lookup[s] for s in text if s in symbols]
 
-text = 'Hello world, I am A I become sentient. Tacotron 2 improves and simplifies the original architecture. While there are no major differences, let\'s see its key points. Mel spectrograms are generated and passed to the Vocoder as opposed to Linear-scale spectrograms.Parallel WaveNet is 1000 times faster than the original networks and can produce 20 seconds of audio in 1 second.' # diminishing quality on longer text sequences + there is a max step length on the decoder
+text = "Hello world, I am A I become sentient. Tacotron 2 improves and simplifies the original architecture. While there are no major differences, let's see its key points. Mel spectrograms are generated and passed to the Vocoder as opposed to Linear-scale spectrograms.Parallel WaveNet is 1000 times faster than the original networks and can produce 20 seconds of audio in 1 second."  # diminishing quality on longer text sequences + there is a max step length on the decoder
 
 bundle = torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH
 processor = bundle.get_text_processor()

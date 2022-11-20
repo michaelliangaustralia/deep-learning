@@ -13,35 +13,34 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.set_printoptions(threshold=10_000)
 
 tokenizer = transformers.Wav2Vec2CTCTokenizer(
-                "./vocab_en.json", 
-                unk_token="[UNK]", 
-                pad_token="[PAD]", 
-                word_delimiter_token="|"
-        )
+    "./vocab_en.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|"
+)
 
-model = transformers.Wav2Vec2ForCTC.from_pretrained(
-    "outputs/w2v2-base-libri-100"
-).to(device)
+model = transformers.Wav2Vec2ForCTC.from_pretrained("outputs/w2v2-base-libri-100").to(
+    device
+)
 model.eval()
 
 # Run through files - using our english test set
-with open('test_tsv.txt') as f:
+with open("test_tsv.txt") as f:
     test_tsvs = f.readlines()
-    test_tsvs = [tsv.replace("\n","") for tsv in test_tsvs]
+    test_tsvs = [tsv.replace("\n", "") for tsv in test_tsvs]
 
 for tsv in test_tsvs:
-    print('testing', tsv)
+    print("testing", tsv)
     df = pd.read_csv(tsv, sep="\t")
     ground_truth_list = []
     hypothesis_list = []
     for idx, row in tqdm(df.iterrows(), total=df.shape[0]):
         try:
-            path = row['paths']
+            path = row["paths"]
             # convert to audio array
             wav, sr = torchaudio.load(path)
             # upsample
             resample_rate = 16000
-            resampler = torchaudio.transforms.Resample(sr, resample_rate, dtype=wav.dtype)
+            resampler = torchaudio.transforms.Resample(
+                sr, resample_rate, dtype=wav.dtype
+            )
             resampled_waveform = resampler(wav)
 
             # chunk the audio up - hard cut every 30s
@@ -71,12 +70,12 @@ for tsv in test_tsvs:
                 word_offsets += word_offsets_chunk
                 predicted_chunk = preds[0]
                 predicted_sentence += predicted_chunk
-            ground_truth_list.append(row['labels'])
+            ground_truth_list.append(row["labels"])
             hypothesis_list.append(predicted_sentence)
         except Exception as e:
-            print(e)            
+            print(e)
 
-    # wer  
+    # wer
     measures = jiwer.compute_measures(ground_truth_list, hypothesis_list)
-    print('------', tsv, ' OUTPUT --------')
+    print("------", tsv, " OUTPUT --------")
     print(measures)
