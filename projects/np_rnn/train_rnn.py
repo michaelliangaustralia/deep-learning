@@ -33,11 +33,11 @@ for i in range(num_epochs):
 
         hidden_state = np.zeros_like(hidden_state)
 
-        outputs, hidden_states = utils.forward_pass(
+        outputs, hidden_states = utils.forward_pass_rnn(
             inputs_one_hot, hidden_state, params
         )
 
-        loss, _ = utils.backward_pass(
+        loss, _ = utils.backward_pass_rnn(
             inputs_one_hot, outputs, hidden_states, targets_one_hot, params
         )
 
@@ -52,11 +52,11 @@ for i in range(num_epochs):
 
         hidden_state = np.zeros_like(hidden_state)
 
-        outputs, hidden_states = utils.forward_pass(
+        outputs, hidden_states = utils.forward_pass_rnn(
             inputs_one_hot, hidden_state, params
         )
 
-        loss, grads = utils.backward_pass(
+        loss, grads = utils.backward_pass_rnn(
             inputs_one_hot, outputs, hidden_states, targets_one_hot, params
         )
 
@@ -83,7 +83,7 @@ targets_one_hot = utils.one_hot_encode_sequence(targets, vocab_size, word_to_idx
 
 hidden_state = np.zeros((hidden_size, 1))
 
-outputs, hidden_states = utils.forward_pass(inputs_one_hot, hidden_state, params)
+outputs, hidden_states = utils.forward_pass_rnn(inputs_one_hot, hidden_state, params)
 output_sentence = [idx_to_word[np.argmax(output)] for output in outputs]
 print("Input sentence:")
 print(inputs)

@@ -274,7 +274,7 @@ def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
         return f
 
 
-def forward_pass(
+def forward_pass_rnn(
     inputs: np.ndarray,
     hidden_state: np.ndarray,
     params: Tuple[Dict, Dict, Dict, Dict, Dict],
@@ -330,7 +330,7 @@ def clip_gradient_norm(grads: np.ndarray, max_norm: float = 0.25) -> np.ndarray:
     return grads
 
 
-def backward_pass(
+def backward_pass_rnn(
     inputs: np.ndarray,
     outputs: np.ndarray,
     hidden_states: np.ndarray,
@@ -479,45 +479,159 @@ def inference(
 
     return output_sentence
 
-def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Initialises our LSTM network.
-
-    Args:
-        hidden_size (int): Size of hidden state.
-        vocab_size (int): Size of vocabulary.
-        z_size (int): Size of combined hidden state and vocabulary.
-
-    Returns:
-        w_forget (np.ndarray): Weight matrix of the forget gate.
-        w_input (np.ndarray): Weight matrix of the input gate.
-        w_candidate (np.ndarray): Weight matrix of the candidate gate.
-        w_output (np.ndarray): Weight matrix of the output gate.
-        w_v (np.ndarray): Weight matrix relating the hidden state to the output.
-        b_forget (np.ndarray): Bias matrix of the forget gate.
-        b_input (np.ndarray): Bias matrix of the b_input gate.
-        b_candidate (np.ndarray): Bias matrix of the candidate gate.
-        b_output (np.ndarray): Bias matrix of the output gate.
-        b_v (np.ndarray): Bias matrix relating the hidden state to the output.
+def init_lstm(hidden_size, vocab_size, z_size):
     """
-    w_forget = np.random.randn(hidden_size, z_size)
-    b_forget = np.zeros((hidden_size, 1))
+    Initializes our LSTM network.
+    
+    Args:
+     `hidden_size`: the dimensions of the hidden state
+     `vocab_size`: the dimensions of our vocabulary
+     `z_size`: the dimensions of the concatenated input 
+    """
+    # Weight matrix (forget gate)
+    # YOUR CODE HERE!
+    W_f = np.random.randn(hidden_size, z_size)
+    
+    # Bias for forget gate
+    b_f = np.zeros((hidden_size, 1))
 
-    w_input = np.random.randn(hidden_size, z_size)
-    b_input = np.zeros((hidden_size, 1))
+    # Weight matrix (input gate)
+    # YOUR CODE HERE!
+    W_i = np.random.randn(hidden_size, z_size)
+    
+    # Bias for input gate
+    b_i = np.zeros((hidden_size, 1))
 
-    w_candidate = np.random.randn(hidden_size, z_size)
-    b_candidate = np.zeros((hidden_size, 1))
+    # Weight matrix (candidate)
+    # YOUR CODE HERE!
+    W_g = np.random.randn(hidden_size, z_size)
+    
+    # Bias for candidate
+    b_g = np.zeros((hidden_size, 1))
 
-    w_output = np.random.randn(hidden_size, z_size)
-    b_output = np.zeros((hidden_size, 1))
+    # Weight matrix of the output gate
+    # YOUR CODE HERE!
+    W_o = np.random.randn(hidden_size, z_size)
+    b_o = np.zeros((hidden_size, 1))
 
-    w_v = np.random.randn(vocab_size, hidden_size)
+    # Weight matrix relating the hidden-state to the output
+    # YOUR CODE HERE!
+    W_v = np.random.randn(vocab_size, hidden_size)
     b_v = np.zeros((vocab_size, 1))
+    
+    # Initialize weights according to https://arxiv.org/abs/1312.6120
+    W_f = _init_orthogonal(W_f)
+    W_i = _init_orthogonal(W_i)
+    W_g = _init_orthogonal(W_g)
+    W_o = _init_orthogonal(W_o)
+    W_v = _init_orthogonal(W_v)
+    
 
-    w_forget = _init_orthogonal(w_forget)
-    w_input = _init_orthogonal(w_forget)
-    w_candidate = _init_orthogonal(w_forget)
-    w_output = _init_orthogonal(w_forget)
-    w_v = _init_orthogonal(w_forget)
+    There is a problem here in my implementation...
+    return W_f, W_i, W_g, W_o, W_v, b_f, b_i, b_g, b_o, b_v
 
-    return w_forget, w_input, w_candidate, w_output, w_v, b_forget, b_input, b_candidate, b_output, b_v
+# def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+#     """Initialises our LSTM network.
+
+#     Args:
+#         hidden_size (int): Size of hidden state.
+#         vocab_size (int): Size of vocabulary.
+#         z_size (int): Size of combined hidden state and vocabulary.
+
+#     Returns:
+#         w_forget (np.ndarray): Weight matrix of the forget gate.
+#         w_input (np.ndarray): Weight matrix of the input gate.
+#         w_candidate (np.ndarray): Weight matrix of the candidate gate.
+#         w_output (np.ndarray): Weight matrix of the output gate.
+#         w_logit (np.ndarray): Weight matrix relating the hidden state to the output for particular timestep.
+#         b_forget (np.ndarray): Bias matrix of the forget gate.
+#         b_input (np.ndarray): Bias matrix of the b_input gate.
+#         b_candidate (np.ndarray): Bias matrix of the candidate gate.
+#         b_output (np.ndarray): Bias matrix of the output gate.
+#         b_v (np.ndarray): Bias matrix relating the hidden state to the output.
+#     """
+#     w_forget = np.random.randn(hidden_size, z_size)
+#     b_forget = np.zeros((hidden_size, 1))
+
+#     w_input = np.random.randn(hidden_size, z_size)
+#     b_input = np.zeros((hidden_size, 1))
+
+#     w_candidate = np.random.randn(hidden_size, z_size)
+#     b_candidate = np.zeros((hidden_size, 1))
+
+#     w_output = np.random.randn(hidden_size, z_size)
+#     b_output = np.zeros((hidden_size, 1))
+
+#     w_logit = np.random.randn(vocab_size, hidden_size)
+#     b_logit = np.zeros((vocab_size, 1))
+
+#     w_forget = _init_orthogonal(w_forget)
+#     w_input = _init_orthogonal(w_forget)
+#     w_candidate = _init_orthogonal(w_forget)
+#     w_output = _init_orthogonal(w_forget)
+#     w_logit = _init_orthogonal(w_forget)
+
+#     return w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit
+
+
+def forward_pass_lstm(inputs: np.ndarray, hidden_prev: np.ndarray, candidate_prev: np.ndarray, params: np.ndarray, hidden_size: int) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+    """Forward pass of the LSTM network.
+    
+    Args:
+        inputs (np.ndarray): Inputs.
+        hidden_prev (np.ndarray): Previous hidden state.
+        candidate_prev (np.ndarray): Previous candidate state.
+        params (np.ndarray): List of LSTM params.
+        hidden_size (int): Size of LSTM hidden states.
+    
+    Returns:
+        z_s (List[np.ndarray]): List of prev hidden state and input row stack outputs.
+        f_s (List[np.ndarray]): List of forget gate outputs.
+        i_s (List[np.ndarray]): List of input gate outputs.
+        g_s (List[np.ndarray]): List of candidate outputs.
+        C_s (List[np.ndarray]): List of memory cell outputs.
+        o_s (List[np.ndarray]): List of output gate outputs.
+        h_s (List[np.ndarray]): List of hidden state outputs.
+        v_s (List[np.ndarray]): List of logit outputs.
+        output_s (List[np.ndarray]): List of softmaxed logit outputs.
+    """
+    assert hidden_prev.shape == (hidden_size, 1)
+    assert candidate_prev.shape == (hidden_size, 1)
+
+    w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit = params
+
+    x_s, z_s, f_s, i_s,  = [], [] ,[], []
+    g_s, C_s, o_s, h_s = [], [] ,[], []
+    v_s, output_s =  [], [] 
+    h_s.append(hidden_prev)
+    C_s.append(candidate_prev)
+
+    for x in inputs:
+        z = np.row_stack((hidden_prev, x))
+        z_s.append(z)
+
+        forget = sigmoid(np.dot(w_forget, z) + b_forget)
+        f_s.append(forget)
+
+        input = sigmoid(np.dot(w_input, z) + b_input)
+        i_s.append(input)
+
+        g = tanh(np.dot(w_candidate, z) + b_candidate)
+        g_s.append(g)
+
+        candidate_prev = forget * candidate_prev + input * g
+        C_s.append(candidate_prev)
+
+        o = sigmoid(np.dot(w_output, z) + b_output)
+        o_s.append(o)
+
+        hidden_prev = o * tanh(candidate_prev)
+        h_s.append(hidden_prev)
+
+        v = np.dot(w_logit, hidden_prev) + b_logit
+        v_s.append(v)
+        
+        output = softmax(v)
+        output_s.append(output)
+
+    return z_s, f_s, i_s, g_s, C_s, o_s, h_s, v_s, output_s
