@@ -198,24 +198,24 @@ def init_rnn(
         vocab_size (int): Size of the hidden layer.
 
     Returns:
-        weight_matrix_input (np.ndarray): weight matrix of the input-rnn interface.
-        weight_matrix_rnn (np.ndarray): weight matrix of the rnn-rnn interface.
-        weight_matrix_output (np.ndarray): weight matrix of the rnn-output interface.
+        w_input (np.ndarray): weight matrix of the input-rnn interface.
+        w_rnn (np.ndarray): weight matrix of the rnn-rnn interface.
+        w_output (np.ndarray): weight matrix of the rnn-output interface.
         b_hidden (np.ndarray): bias matrix of the rnn.
         b_out (np.ndarray): bias matrix of the rnn-output interface.
     """
-    weight_matrix_input = np.zeros((hidden_size, vocab_size))
-    weight_matrix_rnn = np.zeros((hidden_size, hidden_size))
-    weight_matrix_output = np.zeros((vocab_size, hidden_size))
+    w_input = np.zeros((hidden_size, vocab_size))
+    w_rnn = np.zeros((hidden_size, hidden_size))
+    w_output = np.zeros((vocab_size, hidden_size))
 
     b_hidden = np.zeros((hidden_size, 1))
     b_out = np.zeros((vocab_size, 1))
 
-    weight_matrix_input = _init_orthogonal(weight_matrix_input)
-    weight_matrix_rnn = _init_orthogonal(weight_matrix_rnn)
-    weight_matrix_output = _init_orthogonal(weight_matrix_output)
+    w_input = _init_orthogonal(w_input)
+    w_rnn = _init_orthogonal(w_rnn)
+    w_output = _init_orthogonal(w_output)
 
-    return weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out
+    return w_input, w_rnn, w_output, b_hidden, b_out
 
 
 def sigmoid(x: np.ndarray, derivative: bool = False) -> np.ndarray:
@@ -291,20 +291,20 @@ def forward_pass(
         hidden_states (np.ndarray): List of RNN hidden states for each input.
     """
     (
-        weight_matrix_input,
-        weight_matrix_rnn,
-        weight_matrix_output,
+        w_input,
+        w_rnn,
+        w_output,
         b_hidden,
         b_out,
     ) = params
     outputs, hidden_states = [], []
     for inp in inputs:
         hidden_state = tanh(
-            np.dot(weight_matrix_input, inp)
-            + np.dot(weight_matrix_rnn, hidden_state)
+            np.dot(w_input, inp)
+            + np.dot(w_rnn, hidden_state)
             + b_hidden
         )
-        output = softmax(np.dot(weight_matrix_output, hidden_state) + b_out)
+        output = softmax(np.dot(w_output, hidden_state) + b_out)
         outputs.append(output)
         hidden_states.append(hidden_state.copy())
     return outputs, hidden_states
@@ -355,17 +355,17 @@ def backward_pass(
     """
 
     (
-        weight_matrix_input,
-        weight_matrix_rnn,
-        weight_matrix_output,
+        w_input,
+        w_rnn,
+        w_output,
         b_hidden,
         b_out,
     ) = params
 
-    d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = (
-        np.zeros_like(weight_matrix_input),
-        np.zeros_like(weight_matrix_rnn),
-        np.zeros_like(weight_matrix_output),
+    d_w_input, d_w_rnn, d_w_output = (
+        np.zeros_like(w_input),
+        np.zeros_like(w_rnn),
+        np.zeros_like(w_output),
     )
     d_b_hidden, d_b_out = np.zeros_like(b_hidden), np.zeros_like(b_out)
 
@@ -378,23 +378,23 @@ def backward_pass(
         d_output = outputs[t].copy()
         d_output[np.argmax(targets[t])] -= 1
 
-        d_weight_matrix_output += np.dot(d_output, hidden_states[t].T)
+        d_w_output += np.dot(d_output, hidden_states[t].T)
         d_b_out += d_output
 
-        d_hidden = np.dot(weight_matrix_output.T, d_output) + d_hidden_next
+        d_hidden = np.dot(w_output.T, d_output) + d_hidden_next
 
         d_f = tanh(hidden_states[t], derivative=True) * d_hidden  # ?
         d_b_hidden += d_f
 
-        d_weight_matrix_input += np.dot(d_f, inputs[t].T)
+        d_w_input += np.dot(d_f, inputs[t].T)
 
-        d_weight_matrix_rnn += np.dot(d_f, hidden_states[t - 1].T)
-        d_hidden_next = np.dot(weight_matrix_rnn.T, d_f)
+        d_w_rnn += np.dot(d_f, hidden_states[t - 1].T)
+        d_hidden_next = np.dot(w_rnn.T, d_f)
 
     grads = (
-        d_weight_matrix_input,
-        d_weight_matrix_rnn,
-        d_weight_matrix_output,
+        d_w_input,
+        d_w_rnn,
+        d_w_output,
         d_b_hidden,
         d_b_out,
     )
@@ -478,3 +478,46 @@ def inference(
         output_sentence.append(word)
 
     return output_sentence
+
+def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Initialises our LSTM network.
+
+    Args:
+        hidden_size (int): Size of hidden state.
+        vocab_size (int): Size of vocabulary.
+        z_size (int): Size of combined hidden state and vocabulary.
+
+    Returns:
+        w_forget (np.ndarray): Weight matrix of the forget gate.
+        w_input (np.ndarray): Weight matrix of the input gate.
+        w_candidate (np.ndarray): Weight matrix of the candidate gate.
+        w_output (np.ndarray): Weight matrix of the output gate.
+        w_v (np.ndarray): Weight matrix relating the hidden state to the output.
+        b_forget (np.ndarray): Bias matrix of the forget gate.
+        b_input (np.ndarray): Bias matrix of the b_input gate.
+        b_candidate (np.ndarray): Bias matrix of the candidate gate.
+        b_output (np.ndarray): Bias matrix of the output gate.
+        b_v (np.ndarray): Bias matrix relating the hidden state to the output.
+    """
+    w_forget = np.random.randn(hidden_size, z_size)
+    b_forget = np.zeros((hidden_size, 1))
+
+    w_input = np.random.randn(hidden_size, z_size)
+    b_input = np.zeros((hidden_size, 1))
+
+    w_candidate = np.random.randn(hidden_size, z_size)
+    b_candidate = np.zeros((hidden_size, 1))
+
+    w_output = np.random.randn(hidden_size, z_size)
+    b_output = np.zeros((hidden_size, 1))
+
+    w_v = np.random.randn(vocab_size, hidden_size)
+    b_v = np.zeros((vocab_size, 1))
+
+    w_forget = _init_orthogonal(w_forget)
+    w_input = _init_orthogonal(w_forget)
+    w_candidate = _init_orthogonal(w_forget)
+    w_output = _init_orthogonal(w_forget)
+    w_v = _init_orthogonal(w_forget)
+
+    return w_forget, w_input, w_candidate, w_output, w_v, b_forget, b_input, b_candidate, b_output, b_v
