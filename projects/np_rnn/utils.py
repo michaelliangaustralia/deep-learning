@@ -450,7 +450,7 @@ def inference(
     hidden_state = np.zeros((hidden_size, 1))
 
     # Generate hidden state for sentence
-    outputs, hidden_states = forward_pass(sentence_one_hot, hidden_state, params)
+    outputs, hidden_states = forward_pass_rnn(sentence_one_hot, hidden_state, params)
 
     # Output sentence
     output_sentence = sentence
@@ -470,7 +470,7 @@ def inference(
         output = output.reshape(1, output.shape[0], output.shape[1])
 
         # Forward pass
-        outputs, hidden_states = forward_pass(output, hidden_state, params)
+        outputs, hidden_states = forward_pass_rnn(output, hidden_state, params)
 
         # Compute the index the most likely word and look up the corresponding word
         word = idx_to_word[np.argmax(outputs)]
