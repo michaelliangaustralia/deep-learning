@@ -479,99 +479,48 @@ def inference(
 
     return output_sentence
 
-def init_lstm(hidden_size, vocab_size, z_size):
-    """
-    Initializes our LSTM network.
-    
+def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Initialises our LSTM network.
+
     Args:
-     `hidden_size`: the dimensions of the hidden state
-     `vocab_size`: the dimensions of our vocabulary
-     `z_size`: the dimensions of the concatenated input 
+        hidden_size (int): Size of hidden state.
+        vocab_size (int): Size of vocabulary.
+        z_size (int): Size of combined hidden state and vocabulary.
+
+    Returns:
+        w_forget (np.ndarray): Weight matrix of the forget gate.
+        w_input (np.ndarray): Weight matrix of the input gate.
+        w_candidate (np.ndarray): Weight matrix of the candidate gate.
+        w_output (np.ndarray): Weight matrix of the output gate.
+        w_logit (np.ndarray): Weight matrix relating the hidden state to the output for particular timestep.
+        b_forget (np.ndarray): Bias matrix of the forget gate.
+        b_input (np.ndarray): Bias matrix of the b_input gate.
+        b_candidate (np.ndarray): Bias matrix of the candidate gate.
+        b_output (np.ndarray): Bias matrix of the output gate.
+        b_v (np.ndarray): Bias matrix relating the hidden state to the output.
     """
-    # Weight matrix (forget gate)
-    # YOUR CODE HERE!
-    W_f = np.random.randn(hidden_size, z_size)
-    
-    # Bias for forget gate
-    b_f = np.zeros((hidden_size, 1))
+    w_forget = np.random.randn(hidden_size, z_size)
+    b_forget = np.zeros((hidden_size, 1))
 
-    # Weight matrix (input gate)
-    # YOUR CODE HERE!
-    W_i = np.random.randn(hidden_size, z_size)
-    
-    # Bias for input gate
-    b_i = np.zeros((hidden_size, 1))
+    w_input = np.random.randn(hidden_size, z_size)
+    b_input = np.zeros((hidden_size, 1))
 
-    # Weight matrix (candidate)
-    # YOUR CODE HERE!
-    W_g = np.random.randn(hidden_size, z_size)
-    
-    # Bias for candidate
-    b_g = np.zeros((hidden_size, 1))
+    w_candidate = np.random.randn(hidden_size, z_size)
+    b_candidate = np.zeros((hidden_size, 1))
 
-    # Weight matrix of the output gate
-    # YOUR CODE HERE!
-    W_o = np.random.randn(hidden_size, z_size)
-    b_o = np.zeros((hidden_size, 1))
+    w_output = np.random.randn(hidden_size, z_size)
+    b_output = np.zeros((hidden_size, 1))
 
-    # Weight matrix relating the hidden-state to the output
-    # YOUR CODE HERE!
-    W_v = np.random.randn(vocab_size, hidden_size)
-    b_v = np.zeros((vocab_size, 1))
-    
-    # Initialize weights according to https://arxiv.org/abs/1312.6120
-    W_f = _init_orthogonal(W_f)
-    W_i = _init_orthogonal(W_i)
-    W_g = _init_orthogonal(W_g)
-    W_o = _init_orthogonal(W_o)
-    W_v = _init_orthogonal(W_v)
-    
+    w_logit = np.random.randn(vocab_size, hidden_size)
+    b_logit = np.zeros((vocab_size, 1))
 
-    There is a problem here in my implementation...
-    return W_f, W_i, W_g, W_o, W_v, b_f, b_i, b_g, b_o, b_v
+    w_forget = _init_orthogonal(w_forget)
+    w_input = _init_orthogonal(w_input)
+    w_candidate = _init_orthogonal(w_candidate)
+    w_output = _init_orthogonal(w_output)
+    w_logit = _init_orthogonal(w_logit)
 
-# def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-#     """Initialises our LSTM network.
-
-#     Args:
-#         hidden_size (int): Size of hidden state.
-#         vocab_size (int): Size of vocabulary.
-#         z_size (int): Size of combined hidden state and vocabulary.
-
-#     Returns:
-#         w_forget (np.ndarray): Weight matrix of the forget gate.
-#         w_input (np.ndarray): Weight matrix of the input gate.
-#         w_candidate (np.ndarray): Weight matrix of the candidate gate.
-#         w_output (np.ndarray): Weight matrix of the output gate.
-#         w_logit (np.ndarray): Weight matrix relating the hidden state to the output for particular timestep.
-#         b_forget (np.ndarray): Bias matrix of the forget gate.
-#         b_input (np.ndarray): Bias matrix of the b_input gate.
-#         b_candidate (np.ndarray): Bias matrix of the candidate gate.
-#         b_output (np.ndarray): Bias matrix of the output gate.
-#         b_v (np.ndarray): Bias matrix relating the hidden state to the output.
-#     """
-#     w_forget = np.random.randn(hidden_size, z_size)
-#     b_forget = np.zeros((hidden_size, 1))
-
-#     w_input = np.random.randn(hidden_size, z_size)
-#     b_input = np.zeros((hidden_size, 1))
-
-#     w_candidate = np.random.randn(hidden_size, z_size)
-#     b_candidate = np.zeros((hidden_size, 1))
-
-#     w_output = np.random.randn(hidden_size, z_size)
-#     b_output = np.zeros((hidden_size, 1))
-
-#     w_logit = np.random.randn(vocab_size, hidden_size)
-#     b_logit = np.zeros((vocab_size, 1))
-
-#     w_forget = _init_orthogonal(w_forget)
-#     w_input = _init_orthogonal(w_forget)
-#     w_candidate = _init_orthogonal(w_forget)
-#     w_output = _init_orthogonal(w_forget)
-#     w_logit = _init_orthogonal(w_forget)
-
-#     return w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit
+    return w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit
 
 
 def forward_pass_lstm(inputs: np.ndarray, hidden_prev: np.ndarray, candidate_prev: np.ndarray, params: np.ndarray, hidden_size: int) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
