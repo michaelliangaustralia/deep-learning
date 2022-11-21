@@ -621,5 +621,21 @@ def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[n
         d_logit = np.copy(outputs[t])
         d_logit[np.argmax(targets[t])] -= 1
 
-        d_weight_logit += np.dot(d_logit, h_s[t].T)
+        d_w_logit += np.dot(d_logit, h_s[t].T)
         d_b_logit += d_logit
+
+        d_hidden = np.dot(w_logit.T, d_logit)
+        d_hidden += d_hidden_next
+        d_output = d_hidden * tanh(C_s[t])
+        d_output = sigmoid(outputs[t], derivative=True) * d_output
+
+        d_w_output = np.dot(d_output, z_s[t].T)
+        d_b_output += d_output
+
+        d_memory_cell = np.copy(d_memory_cell_next)
+        d_memory_cell += d_hidden * outputs[t] * tanh(tanh(C_s[t]), derivative=True)
+        d_candidate = d_memory_cell * i_s[t]
+        d_candidate = tanh(g_s[t], derivative=True) * d_candidate
+
+        d_w_candidate += np.dot(d_candidate, z_s[t].T)
+        d_b_candidate += d_candidate
