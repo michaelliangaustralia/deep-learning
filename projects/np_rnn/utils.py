@@ -627,6 +627,7 @@ def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[n
     for t in reversed(range(len(outputs))):
         
         loss += -np.mean(np.log(outputs[t]) * targets[t])
+        
         C_prev= C_s[t-1]
         
         d_logit = np.copy(outputs[t])
