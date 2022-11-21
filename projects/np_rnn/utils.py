@@ -584,3 +584,42 @@ def forward_pass_lstm(inputs: np.ndarray, hidden_prev: np.ndarray, candidate_pre
         output_s.append(output)
 
     return z_s, f_s, i_s, g_s, C_s, o_s, h_s, v_s, output_s
+
+def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[np.ndarray], g_s: List[np.ndarray], C_s: List[np.ndarray], o_s: List[np.ndarray], h_s: List[np.ndarray], v_s: List[np.ndarray], outputs: List[np.ndarray], targets: List[np.ndarray], params: np.ndarray):
+    """Backward pass function for LSTM network.
+    
+    Args:
+        z_s (List[np.ndarray]): List of prev hidden state and input row stack outputs.
+        f_s (List[np.ndarray]): List of forget gate outputs.
+        i_s (List[np.ndarray]): List of input gate outputs.
+        g_s (List[np.ndarray]): List of candidate outputs.
+        C_s (List[np.ndarray]): List of memory cell outputs.
+        o_s (List[np.ndarray]): List of output gate outputs.
+        h_s (List[np.ndarray]): List of hidden state outputs.
+        v_s (List[np.ndarray]): List of logit outputs.
+        output_s (List[np.ndarray]): List of softmaxed logit outputs.
+        targets (List[np.ndarray]): List of targets.
+        params (np.ndarray): State of the network.
+        
+    Returns:
+        TODO
+    """
+    w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit = params
+
+    d_w_forget, d_b_forget, d_w_input, d_b_input, d_w_candidate, d_b_candidate, d_w_output, d_b_output, d_w_logit, d_b_logit = np.zeros_like(w_forget), np.zeros_like(b_forget), np.zeros_like(w_input), np.zeros_like(b_input), np.zeros_like(w_candidate), np.zeros_like(b_candidate), np.zeros_like(w_output), np.zeros_like(b_output), np.zeros_like(w_logit), np.zeros_like(b_logit)
+
+    d_hidden_next = np.zeros_like(h_s[0])
+    d_memory_cell_next = np.zeros_like(C_s[0])
+
+    loss = 0
+
+    for t in reversed(range(len(outputs))):
+
+        loss += -np.mean(np.log(outputs[t]) * targets[t])
+        C_prev = C_s[t-1]
+
+        d_logit = np.copy(outputs[t])
+        d_logit[np.argmax(targets[t])] -= 1
+
+        d_weight_logit += np.dot(d_logit, h_s[t].T)
+        d_b_logit += d_logit
