@@ -198,24 +198,24 @@ def init_rnn(
         vocab_size (int): Size of the hidden layer.
 
     Returns:
-        weight_matrix_input (np.ndarray): weight matrix of the input-rnn interface.
-        weight_matrix_rnn (np.ndarray): weight matrix of the rnn-rnn interface.
-        weight_matrix_output (np.ndarray): weight matrix of the rnn-output interface.
+        w_input (np.ndarray): weight matrix of the input-rnn interface.
+        w_rnn (np.ndarray): weight matrix of the rnn-rnn interface.
+        w_output (np.ndarray): weight matrix of the rnn-output interface.
         b_hidden (np.ndarray): bias matrix of the rnn.
         b_out (np.ndarray): bias matrix of the rnn-output interface.
     """
-    weight_matrix_input = np.zeros((hidden_size, vocab_size))
-    weight_matrix_rnn = np.zeros((hidden_size, hidden_size))
-    weight_matrix_output = np.zeros((vocab_size, hidden_size))
+    w_input = np.zeros((hidden_size, vocab_size))
+    w_rnn = np.zeros((hidden_size, hidden_size))
+    w_output = np.zeros((vocab_size, hidden_size))
 
     b_hidden = np.zeros((hidden_size, 1))
     b_out = np.zeros((vocab_size, 1))
 
-    weight_matrix_input = _init_orthogonal(weight_matrix_input)
-    weight_matrix_rnn = _init_orthogonal(weight_matrix_rnn)
-    weight_matrix_output = _init_orthogonal(weight_matrix_output)
+    w_input = _init_orthogonal(w_input)
+    w_rnn = _init_orthogonal(w_rnn)
+    w_output = _init_orthogonal(w_output)
 
-    return weight_matrix_input, weight_matrix_rnn, weight_matrix_output, b_hidden, b_out
+    return w_input, w_rnn, w_output, b_hidden, b_out
 
 
 def sigmoid(x: np.ndarray, derivative: bool = False) -> np.ndarray:
@@ -274,7 +274,7 @@ def softmax(x: np.ndarray, derivative: bool = False) -> np.ndarray:
         return f
 
 
-def forward_pass(
+def forward_pass_rnn(
     inputs: np.ndarray,
     hidden_state: np.ndarray,
     params: Tuple[Dict, Dict, Dict, Dict, Dict],
@@ -291,20 +291,20 @@ def forward_pass(
         hidden_states (np.ndarray): List of RNN hidden states for each input.
     """
     (
-        weight_matrix_input,
-        weight_matrix_rnn,
-        weight_matrix_output,
+        w_input,
+        w_rnn,
+        w_output,
         b_hidden,
         b_out,
     ) = params
     outputs, hidden_states = [], []
     for inp in inputs:
         hidden_state = tanh(
-            np.dot(weight_matrix_input, inp)
-            + np.dot(weight_matrix_rnn, hidden_state)
+            np.dot(w_input, inp)
+            + np.dot(w_rnn, hidden_state)
             + b_hidden
         )
-        output = softmax(np.dot(weight_matrix_output, hidden_state) + b_out)
+        output = softmax(np.dot(w_output, hidden_state) + b_out)
         outputs.append(output)
         hidden_states.append(hidden_state.copy())
     return outputs, hidden_states
@@ -330,7 +330,7 @@ def clip_gradient_norm(grads: np.ndarray, max_norm: float = 0.25) -> np.ndarray:
     return grads
 
 
-def backward_pass(
+def backward_pass_rnn(
     inputs: np.ndarray,
     outputs: np.ndarray,
     hidden_states: np.ndarray,
@@ -355,17 +355,17 @@ def backward_pass(
     """
 
     (
-        weight_matrix_input,
-        weight_matrix_rnn,
-        weight_matrix_output,
+        w_input,
+        w_rnn,
+        w_output,
         b_hidden,
         b_out,
     ) = params
 
-    d_weight_matrix_input, d_weight_matrix_rnn, d_weight_matrix_output = (
-        np.zeros_like(weight_matrix_input),
-        np.zeros_like(weight_matrix_rnn),
-        np.zeros_like(weight_matrix_output),
+    d_w_input, d_w_rnn, d_w_output = (
+        np.zeros_like(w_input),
+        np.zeros_like(w_rnn),
+        np.zeros_like(w_output),
     )
     d_b_hidden, d_b_out = np.zeros_like(b_hidden), np.zeros_like(b_out)
 
@@ -378,23 +378,23 @@ def backward_pass(
         d_output = outputs[t].copy()
         d_output[np.argmax(targets[t])] -= 1
 
-        d_weight_matrix_output += np.dot(d_output, hidden_states[t].T)
+        d_w_output += np.dot(d_output, hidden_states[t].T)
         d_b_out += d_output
 
-        d_hidden = np.dot(weight_matrix_output.T, d_output) + d_hidden_next
+        d_hidden = np.dot(w_output.T, d_output) + d_hidden_next
 
         d_f = tanh(hidden_states[t], derivative=True) * d_hidden  # ?
         d_b_hidden += d_f
 
-        d_weight_matrix_input += np.dot(d_f, inputs[t].T)
+        d_w_input += np.dot(d_f, inputs[t].T)
 
-        d_weight_matrix_rnn += np.dot(d_f, hidden_states[t - 1].T)
-        d_hidden_next = np.dot(weight_matrix_rnn.T, d_f)
+        d_w_rnn += np.dot(d_f, hidden_states[t - 1].T)
+        d_hidden_next = np.dot(w_rnn.T, d_f)
 
     grads = (
-        d_weight_matrix_input,
-        d_weight_matrix_rnn,
-        d_weight_matrix_output,
+        d_w_input,
+        d_w_rnn,
+        d_w_output,
         d_b_hidden,
         d_b_out,
     )
@@ -450,7 +450,7 @@ def inference(
     hidden_state = np.zeros((hidden_size, 1))
 
     # Generate hidden state for sentence
-    outputs, hidden_states = forward_pass(sentence_one_hot, hidden_state, params)
+    outputs, hidden_states = forward_pass_rnn(sentence_one_hot, hidden_state, params)
 
     # Output sentence
     output_sentence = sentence
@@ -470,7 +470,7 @@ def inference(
         output = output.reshape(1, output.shape[0], output.shape[1])
 
         # Forward pass
-        outputs, hidden_states = forward_pass(output, hidden_state, params)
+        outputs, hidden_states = forward_pass_rnn(output, hidden_state, params)
 
         # Compute the index the most likely word and look up the corresponding word
         word = idx_to_word[np.argmax(outputs)]
@@ -478,3 +478,197 @@ def inference(
         output_sentence.append(word)
 
     return output_sentence
+
+def init_lstm(hidden_size: int, vocab_size: int, z_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Initialises our LSTM network.
+
+    Args:
+        hidden_size (int): Size of hidden state.
+        vocab_size (int): Size of vocabulary.
+        z_size (int): Size of combined hidden state and vocabulary.
+
+    Returns:
+        w_forget (np.ndarray): Weight matrix of the forget gate.
+        w_input (np.ndarray): Weight matrix of the input gate.
+        w_candidate (np.ndarray): Weight matrix of the candidate gate.
+        w_output (np.ndarray): Weight matrix of the output gate.
+        w_logit (np.ndarray): Weight matrix relating the hidden state to the output for particular timestep.
+        b_forget (np.ndarray): Bias matrix of the forget gate.
+        b_input (np.ndarray): Bias matrix of the b_input gate.
+        b_candidate (np.ndarray): Bias matrix of the candidate gate.
+        b_output (np.ndarray): Bias matrix of the output gate.
+        b_v (np.ndarray): Bias matrix relating the hidden state to the output.
+    """
+    w_forget = np.random.randn(hidden_size, z_size)
+    b_forget = np.zeros((hidden_size, 1))
+
+    w_input = np.random.randn(hidden_size, z_size)
+    b_input = np.zeros((hidden_size, 1))
+
+    w_candidate = np.random.randn(hidden_size, z_size)
+    b_candidate = np.zeros((hidden_size, 1))
+
+    w_output = np.random.randn(hidden_size, z_size)
+    b_output = np.zeros((hidden_size, 1))
+
+    w_logit = np.random.randn(vocab_size, hidden_size)
+    b_logit = np.zeros((vocab_size, 1))
+
+    w_forget = _init_orthogonal(w_forget)
+    w_input = _init_orthogonal(w_input)
+    w_candidate = _init_orthogonal(w_candidate)
+    w_output = _init_orthogonal(w_output)
+    w_logit = _init_orthogonal(w_logit)
+
+    return w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit
+
+
+def forward_pass_lstm(inputs: np.ndarray, hidden_prev: np.ndarray, candidate_prev: np.ndarray, params: np.ndarray, hidden_size: int) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+    """Forward pass of the LSTM network.
+    
+    Args:
+        inputs (np.ndarray): Inputs.
+        hidden_prev (np.ndarray): Previous hidden state.
+        candidate_prev (np.ndarray): Previous candidate state.
+        params (np.ndarray): List of LSTM params.
+        hidden_size (int): Size of LSTM hidden states.
+    
+    Returns:
+        z_s (List[np.ndarray]): List of prev hidden state and input row stack outputs.
+        f_s (List[np.ndarray]): List of forget gate outputs.
+        i_s (List[np.ndarray]): List of input gate outputs.
+        g_s (List[np.ndarray]): List of candidate outputs.
+        C_s (List[np.ndarray]): List of memory cell outputs.
+        o_s (List[np.ndarray]): List of output gate outputs.
+        h_s (List[np.ndarray]): List of hidden state outputs.
+        v_s (List[np.ndarray]): List of logit outputs.
+        output_s (List[np.ndarray]): List of softmaxed logit outputs.
+    """
+    assert hidden_prev.shape == (hidden_size, 1)
+    assert candidate_prev.shape == (hidden_size, 1)
+
+    w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit = params
+
+    x_s, z_s, f_s, i_s,  = [], [] ,[], []
+    g_s, C_s, o_s, h_s = [], [] ,[], []
+    v_s, output_s =  [], [] 
+    h_s.append(hidden_prev)
+    C_s.append(candidate_prev)
+
+    for x in inputs:
+        z = np.row_stack((hidden_prev, x))
+        z_s.append(z)
+
+        forget = sigmoid(np.dot(w_forget, z) + b_forget)
+        f_s.append(forget)
+
+        input = sigmoid(np.dot(w_input, z) + b_input)
+        i_s.append(input)
+
+        g = tanh(np.dot(w_candidate, z) + b_candidate)
+        g_s.append(g)
+
+        candidate_prev = forget * candidate_prev + input * g
+        C_s.append(candidate_prev)
+
+        o = sigmoid(np.dot(w_output, z) + b_output)
+        o_s.append(o)
+
+        hidden_prev = o * tanh(candidate_prev)
+        h_s.append(hidden_prev)
+
+        v = np.dot(w_logit, hidden_prev) + b_logit
+        v_s.append(v)
+        
+        output = softmax(v)
+        output_s.append(output)
+
+    return z_s, f_s, i_s, g_s, C_s, o_s, h_s, v_s, output_s
+
+def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[np.ndarray], g_s: List[np.ndarray], C_s: List[np.ndarray], o_s: List[np.ndarray], h_s: List[np.ndarray], outputs: List[np.ndarray], targets: List[np.ndarray], params: np.ndarray) -> Tuple[float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+    """Backward pass function for LSTM network.
+    
+    Args:
+        z_s (List[np.ndarray]): List of prev hidden state and input row stack outputs.
+        f_s (List[np.ndarray]): List of forget gate outputs.
+        i_s (List[np.ndarray]): List of input gate outputs.
+        g_s (List[np.ndarray]): List of candidate outputs.
+        C_s (List[np.ndarray]): List of memory cell outputs.
+        o_s (List[np.ndarray]): List of output gate outputs.
+        h_s (List[np.ndarray]): List of hidden state outputs.
+        v_s (List[np.ndarray]): List of logit outputs.
+        output_s (List[np.ndarray]): List of softmaxed logit outputs.
+        targets (List[np.ndarray]): List of targets.
+        params (np.ndarray): State of the network.
+        hidden_size (int): Size of LSTM hidden state.
+        
+    Returns:
+        loss (float): Loss for samples.
+        grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Tuple of gradient matrices.
+    """
+    w_forget, W_i, W_g, W_o, W_v, b_f, b_i, b_g, b_o, b_v = params
+
+    d_w_forget = np.zeros_like(w_forget)
+    d_b_forget = np.zeros_like(b_f)
+    d_w_input = np.zeros_like(W_i)
+    d_b_input = np.zeros_like(b_i)
+    d_w_candidate = np.zeros_like(W_g)
+    d_b_candidate = np.zeros_like(b_g)
+    d_w_output = np.zeros_like(W_o)
+    d_b_output = np.zeros_like(b_o)
+    d_w_logit = np.zeros_like(W_v)
+    d_b_logit = np.zeros_like(b_v)
+    
+    d_hidden_next = np.zeros_like(h_s[0])
+    d_memory_cell_next = np.zeros_like(C_s[0])
+        
+    loss = 0
+    
+    for t in reversed(range(len(outputs))):
+        
+        loss += -np.mean(np.log(outputs[t]) * targets[t])
+        
+        C_prev= C_s[t-1]
+        
+        d_logit = np.copy(outputs[t])
+        d_logit[np.argmax(targets[t])] -= 1
+
+        d_w_logit += np.dot(d_logit, h_s[t].T)
+        d_b_logit += d_logit
+
+        d_hidden = np.dot(W_v.T, d_logit)        
+        d_hidden += d_hidden_next
+        d_output = d_hidden * tanh(C_s[t])
+        d_output = sigmoid(o_s[t], derivative=True)*d_output
+        
+        d_w_output += np.dot(d_output, z_s[t].T)
+        d_b_output += d_output
+
+        d_memory_cell = np.copy(d_memory_cell_next)
+        d_memory_cell += d_hidden * o_s[t] * tanh(tanh(C_s[t]), derivative=True)
+        d_candidate = d_memory_cell * i_s[t]
+        d_candidate = tanh(g_s[t], derivative=True) * d_candidate
+        
+        d_w_candidate += np.dot(d_candidate, z_s[t].T)
+        d_b_candidate += d_candidate
+
+        d_input = d_memory_cell * g_s[t]
+        d_input = sigmoid(i_s[t], True) * d_input
+        d_w_input += np.dot(d_input, z_s[t].T)
+        d_b_input += d_input
+
+        d_forget = d_memory_cell * C_prev
+        d_forget = sigmoid(f_s[t]) * d_forget
+        d_w_forget += np.dot(d_forget, z_s[t].T)
+        d_b_forget += d_forget
+
+        dz = (np.dot(w_forget.T, d_forget)
+             + np.dot(W_i.T, d_input)
+             + np.dot(W_g.T, d_candidate)
+             + np.dot(W_o.T, d_output))
+        
+    grads= d_w_forget, d_w_input, d_w_candidate, d_w_output, d_w_logit, d_b_forget, d_b_input, d_b_candidate, d_b_output, d_b_logit
+    
+    grads = clip_gradient_norm(grads)
+    
+    return loss, grads
