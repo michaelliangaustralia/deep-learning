@@ -585,7 +585,7 @@ def forward_pass_lstm(inputs: np.ndarray, hidden_prev: np.ndarray, candidate_pre
 
     return z_s, f_s, i_s, g_s, C_s, o_s, h_s, v_s, output_s
 
-def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[np.ndarray], g_s: List[np.ndarray], C_s: List[np.ndarray], o_s: List[np.ndarray], h_s: List[np.ndarray], v_s: List[np.ndarray], outputs: List[np.ndarray], targets: List[np.ndarray], params: np.ndarray):
+def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[np.ndarray], g_s: List[np.ndarray], C_s: List[np.ndarray], o_s: List[np.ndarray], h_s: List[np.ndarray], outputs: List[np.ndarray], targets: List[np.ndarray], params: np.ndarray) -> Tuple[float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """Backward pass function for LSTM network.
     
     Args:
@@ -600,42 +600,74 @@ def backward_pass_lstm(z_s: List[np.ndarray], f_s: List[np.ndarray], i_s: List[n
         output_s (List[np.ndarray]): List of softmaxed logit outputs.
         targets (List[np.ndarray]): List of targets.
         params (np.ndarray): State of the network.
+        hidden_size (int): Size of LSTM hidden state.
         
     Returns:
-        TODO
+        loss (float): Loss for samples.
+        grads (Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]): Tuple of gradient matrices.
     """
-    w_forget, w_input, w_candidate, w_output, w_logit, b_forget, b_input, b_candidate, b_output, b_logit = params
+    w_forget, W_i, W_g, W_o, W_v, b_f, b_i, b_g, b_o, b_v = params
 
-    d_w_forget, d_b_forget, d_w_input, d_b_input, d_w_candidate, d_b_candidate, d_w_output, d_b_output, d_w_logit, d_b_logit = np.zeros_like(w_forget), np.zeros_like(b_forget), np.zeros_like(w_input), np.zeros_like(b_input), np.zeros_like(w_candidate), np.zeros_like(b_candidate), np.zeros_like(w_output), np.zeros_like(b_output), np.zeros_like(w_logit), np.zeros_like(b_logit)
-
+    d_w_forget = np.zeros_like(w_forget)
+    d_b_forget = np.zeros_like(b_f)
+    d_w_input = np.zeros_like(W_i)
+    d_b_input = np.zeros_like(b_i)
+    d_w_candidate = np.zeros_like(W_g)
+    d_b_candidate = np.zeros_like(b_g)
+    d_w_output = np.zeros_like(W_o)
+    d_b_output = np.zeros_like(b_o)
+    d_w_logit = np.zeros_like(W_v)
+    d_b_logit = np.zeros_like(b_v)
+    
     d_hidden_next = np.zeros_like(h_s[0])
     d_memory_cell_next = np.zeros_like(C_s[0])
-
+        
     loss = 0
-
+    
     for t in reversed(range(len(outputs))):
-
+        
         loss += -np.mean(np.log(outputs[t]) * targets[t])
-        C_prev = C_s[t-1]
-
+        C_prev= C_s[t-1]
+        
         d_logit = np.copy(outputs[t])
         d_logit[np.argmax(targets[t])] -= 1
 
         d_w_logit += np.dot(d_logit, h_s[t].T)
         d_b_logit += d_logit
 
-        d_hidden = np.dot(w_logit.T, d_logit)
+        d_hidden = np.dot(W_v.T, d_logit)        
         d_hidden += d_hidden_next
         d_output = d_hidden * tanh(C_s[t])
-        d_output = sigmoid(outputs[t], derivative=True) * d_output
-
-        d_w_output = np.dot(d_output, z_s[t].T)
+        d_output = sigmoid(o_s[t], derivative=True)*d_output
+        
+        d_w_output += np.dot(d_output, z_s[t].T)
         d_b_output += d_output
 
         d_memory_cell = np.copy(d_memory_cell_next)
-        d_memory_cell += d_hidden * outputs[t] * tanh(tanh(C_s[t]), derivative=True)
+        d_memory_cell += d_hidden * o_s[t] * tanh(tanh(C_s[t]), derivative=True)
         d_candidate = d_memory_cell * i_s[t]
         d_candidate = tanh(g_s[t], derivative=True) * d_candidate
-
+        
         d_w_candidate += np.dot(d_candidate, z_s[t].T)
         d_b_candidate += d_candidate
+
+        d_input = d_memory_cell * g_s[t]
+        d_input = sigmoid(i_s[t], True) * d_input
+        d_w_input += np.dot(d_input, z_s[t].T)
+        d_b_input += d_input
+
+        d_forget = d_memory_cell * C_prev
+        d_forget = sigmoid(f_s[t]) * d_forget
+        d_w_forget += np.dot(d_forget, z_s[t].T)
+        d_b_forget += d_forget
+
+        dz = (np.dot(w_forget.T, d_forget)
+             + np.dot(W_i.T, d_input)
+             + np.dot(W_g.T, d_candidate)
+             + np.dot(W_o.T, d_output))
+        
+    grads= d_w_forget, d_w_input, d_w_candidate, d_w_output, d_w_logit, d_b_forget, d_b_input, d_b_candidate, d_b_output, d_b_logit
+    
+    grads = clip_gradient_norm(grads)
+    
+    return loss, grads

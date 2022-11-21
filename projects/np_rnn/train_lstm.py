@@ -32,6 +32,9 @@ c = np.zeros((hidden_size, 1))
 # Forward pass
 z_s, f_s, i_s, g_s, C_s, o_s, h_s, v_s, outputs = utils.forward_pass_lstm(inputs_one_hot, h, c, params, hidden_size)
 
+loss, grads = utils.backward_pass_lstm(z_s, f_s, i_s, g_s, C_s, o_s, h_s, outputs, targets_one_hot, params)
+print(loss)
+
 output_sentence = [idx_to_word[np.argmax(output)] for output in outputs]
 print('Input sentence:')
 print(inputs)
