@@ -1,6 +1,8 @@
 
 # MadMario
 
+Application of basic reinforcement learning to train an agent to play Mario.
+
 Forked from [yfeng997's implementation](https://github.com/yfeng997/MadMario).
 
 PyTorch [official tutorial](https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html) to build an AI-powered Mario.
