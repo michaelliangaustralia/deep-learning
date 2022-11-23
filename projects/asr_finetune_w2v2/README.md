@@ -1,6 +1,6 @@
 # ASR Finetune Wav2Vec2
 
-Finetuning Meta's Wav2Vec2 on english data
+Finetuning Meta's Wav2Vec2 pretrained ASR model to create an ASR system.
 
 ## Experiments
 
