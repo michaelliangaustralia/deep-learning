@@ -10,3 +10,4 @@ All project specific code exists in the `projects` folder.
 - `tts_tacotron2` - Text to speech TacoTron 2.
 - `rl_mad_mario` - Reinforcement learning to train an agent in Mario game.
 - `np_rnn` - Build a RNN using numpy.
+- `np_cnn` - Build a CNN using numpy.
