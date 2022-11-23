@@ -5,7 +5,7 @@ import IPython
 
 # Datasets
 mnist = datasets.load_dataset("mnist", split=["train"])
-test_image = mnist[0]['image'][0]
+test_image = mnist[0]["image"][0]
 
 # Convolution Layer
 conv = utils.ConvolutionLayer(3, 5)
