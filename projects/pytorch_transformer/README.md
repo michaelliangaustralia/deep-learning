@@ -3,4 +3,4 @@
 PyTorch implementation of a transformer.
 
 ## Resources
-- [Transformers in Pytorch from scratch for NLP Beginners](https://www.hyugen.com/article/transformers-in-pytorch-from-scratch-for-nlp-beginners-113cb366a5) - Blog post
+- [Pytorch Transformers from Scratch (Attention is all you need)](https://www.youtube.com/watch?v=U0s0f995w14) - YouTube paper review and tutorial.
