@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 
 class SelfAttention(nn.Module):
-    """Self Attention Module.
-    """
     def __init__(self, embed_size: int, heads: int) -> None:
         """Initialize the Self Attention Module.
         
@@ -99,4 +97,57 @@ class TransformerBlock(nn.Module):
         x = self.dropout(self.norm1(attention + query))
         forward = self.feed_forward(x)
         out = self.dropout(self.norm2(forward + x))
+        return out
+
+class Encoder(nn.Module):
+    def __init__(self, src_vocab_size: int, embed_size: int, num_layers: int, heads: int, device: torch.device, forward_expansion: int, dropout: float, max_length: int) -> None:
+        """Initialize the Encoder.
+
+        Args:
+            src_vocab_size (int): The size of the source vocabulary.
+            embed_size (int): The embedding size of the input.
+            num_layers (int): The number of layers in the encoder.
+            heads (int): The number of heads to split the input into.
+            device (torch.device): The device to run the model on.
+            forward_expansion (int): The expansion factor of the feed forward layer.
+            dropout (float): The dropout rate.
+            max_length (int): The maximum length of the input for position embedding.
+
+        Returns:
+            None
+        """
+        super(Encoder, self).__init__()
+        self.embed_size = embed_size
+        self.device = device
+        self.word_embedding = nn.Embedding(num_embeddings=src_vocab_size, embedding_dim=embed_size)
+        self.position_embedding = nn.Embedding(num_embeddings=max_length, embedding_dim=embed_size)
+
+        self.layers = nn.ModuleList(
+            [
+                TransformerBlock(
+                    embed_size,
+                    heads,
+                    dropout=dropout,
+                    forward_expansion=forward_expansion
+                )
+            ]
+        )
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the Encoder.
+
+        Args:
+            x (torch.Tensor): The input to the encoder.
+            mask (torch.Tensor): The mask to be used in the attention.
+
+        Returns:
+            out (torch.Tensor): The output of the forward pass.
+        """
+        N, seq_length = x.shape
+        positions = torch.arange(0, seq_length).expand(N, seq_length).to(self.device)
+
+        out = self.dropout(self.word_embedding(x) + self.position_embedding(positions))
+        for layer in self.layers:
+            out = layer(out, out, out, mask)
         return out
