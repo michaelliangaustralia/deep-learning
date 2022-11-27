@@ -13,4 +13,3 @@ src_vocab_size = 10
 trg_vocab_size = 10
 model = utils.Transformer(src_vocab_size, trg_vocab_size, src_pad_idx, trg_pad_idx).to(device)
 out = model(x, trg[:, :-1])
-IPython.embed()
