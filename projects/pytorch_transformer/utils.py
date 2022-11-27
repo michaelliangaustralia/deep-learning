@@ -191,7 +191,7 @@ class DecoderBlock(nn.Module):
         return out
 
 class Decoder(nn.Module):
-    def __init__(self, trg_vocab_size: int, embed_size: int, num_layers: int, heads: int, forward_expansion: int, dropout: float, device: torch.device, max_length: int) -> None:
+    def __init__(self, trg_vocab_size: int, embed_size: int, num_layers: int, heads: int, device: torch.device, forward_expansion: int, dropout: float, max_length: int) -> None:
         """Initialize the Decoder.
 
         Args:
@@ -199,9 +199,9 @@ class Decoder(nn.Module):
             embed_size (int): The embedding size of the input.
             num_layers (int): The number of layers in the decoder.
             heads (int): The number of heads to split the input into.
+            device (torch.device): The device to run the model on.
             forward_expansion (int): The expansion factor of the feed forward layer.
             dropout (float): The dropout rate.
-            device (torch.device): The device to run the model on.
             max_length (int): The maximum length of the input for position embedding.
 
         Returns:
