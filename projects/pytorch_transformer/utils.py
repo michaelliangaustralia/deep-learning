@@ -239,3 +239,70 @@ class Decoder(nn.Module):
         out = self.fc_out(x)
         return out
 
+class Transformer(nn.Module):
+    def __init__(self, src_vocab_size: int, trg_vocab_size: int, src_pad_idx: int, trg_pad_idx: int, embed_size: int = 256, num_layers: int = 6, forward_expansion: int = 4, heads: int = 8, dropout: float = 0, device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"), max_length: int = 100) -> None:
+        """Initialize the Transformer.
+
+        Args:
+            src_vocab_size (int): The size of the source vocabulary.
+            trg_vocab_size (int): The size of the target vocabulary.
+            src_pad_idx (int): The index of the padding token in the source vocabulary.
+            trg_pad_idx (int): The index of the padding token in the target vocabulary.
+            embed_size (int): The embedding size of the input.
+            num_layers (int): The number of layers in the decoder.
+            forward_expansion (int): The expansion factor of the feed forward layer.
+            heads (int): The number of heads to split the input into.
+            dropout (float): The dropout rate.
+            device (torch.device): The device to run the model on.
+            max_length (int): The maximum length of the input for position embedding.
+
+        Returns:
+            None
+        """
+        super(Transformer, self).__init__()
+        self.encoder = Encoder(src_vocab_size, embed_size, num_layers, heads, device, forward_expansion, dropout, max_length)
+        self.decoder = Decoder(trg_vocab_size, embed_size, num_layers, heads, device, forward_expansion, dropout, max_length)
+        self.src_pad_idx = src_pad_idx
+        self.trg_pad_idx = trg_pad_idx
+        self.device = device
+
+    def make_src_mask(self, src: torch.Tensor) -> torch.Tensor:
+        """Make the mask for the source.
+
+        Args:
+            src (torch.Tensor): The source input.
+
+        Returns:
+            src_mask (torch.Tensor): The mask for the source.
+        """
+        src_mask = (src != self.src_pad_idx).unsqueeze(1).unsqueeze(2)
+        return src_mask.to(self.device)
+
+    def make_trg_mask(self, trg: torch.Tensor) -> torch.Tensor:
+        """Make the mask for the target.
+
+        Args:
+            trg (torch.Tensor): The target input.
+
+        Returns:
+            trg_mask (torch.Tensor): The mask for the target.
+        """
+        N, trg_len = trg.shape
+        trg_mask = torch.tril(torch.ones((trg_len, trg_len))).expand(N, 1, trg_len, trg_len)
+        return trg_mask.to(self.device)
+
+    def forward(self, src: torch.Tensor, trg: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the Transformer.
+
+        Args:
+            src (torch.Tensor): The source input.
+            trg (torch.Tensor): The target input.
+
+        Returns:
+            out (torch.Tensor): The output of the forward pass.
+        """
+        src_mask = self.make_src_mask(src)
+        trg_mask = self.make_trg_mask(trg)
+        enc_src = self.encoder(src, src_mask)
+        out = self.decoder(trg, enc_src, src_mask, trg_mask)
+        return out
