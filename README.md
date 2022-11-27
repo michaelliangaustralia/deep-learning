@@ -11,3 +11,4 @@ All project specific code exists in the `projects` folder.
 - `rl_mad_mario` - Reinforcement learning to train an agent in Mario game.
 - `np_rnn` - Build a RNN using numpy.
 - `np_cnn` - Build a CNN using numpy.
+- `pytorch_transformer` - Build a transformer using PyTorch.
