@@ -10,6 +10,9 @@ from tqdm import tqdm
 
 import IPython
 
+# Device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # Dataset.
 train_ds = datasets.load_dataset('csv', data_files="train.csv")['train']
 test_ds = datasets.load_dataset('csv', data_files="test.csv")["train"]
@@ -103,17 +106,19 @@ def collate_fn(batch):
         target[i, 0] = row['target']
     return source, target
 
-dataloader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True, collate_fn=collate_fn)
+dataloader = torch.utils.data.DataLoader(train_ds, batch_size=32, collate_fn=collate_fn)
 
 # Model.
-n_epochs = 10
-model = model.TitanicModel()
+n_epochs = 100
+model = model.TitanicModel().to(device)
 criterion = torch.nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
 for epoch in range(n_epochs):
     for batch in tqdm(dataloader):
         source, target = batch
+        source = source.to(device)
+        target = target.to(device)
 
         # Forward pass.
         output = model(source)
