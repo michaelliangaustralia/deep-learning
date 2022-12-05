@@ -73,7 +73,7 @@ def convert_to_int(row: Dict[str, Any]) -> Dict[str, Any]:
     row['VRDeck_int'] = int(float(row['VRDeck'])) if row['VRDeck'] != 'nan' else 0
     return row
 
-def collate_fn(batch: List[Dict[str, Any]]) -> Tuple(List[Dict[str, Any]], List[Dict[str, Any]]):
+def collate_fn(batch: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Collate function for the dataloader.
     
     Args:
