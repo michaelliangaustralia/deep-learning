@@ -7,22 +7,33 @@ import datasets
 import torch
 import model
 from tqdm import tqdm
+import os
+import subprocess
 
 import IPython
 
+# Create output folder if doesn't exist
+if not os.path.exists('output'):
+    os.makedirs('output')
+else:
+    subprocess.run("find outputs --delete", shell=True)
+    
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Dataset.
-train_ds = datasets.load_dataset('csv', data_files="train.csv")['train']
-test_ds = datasets.load_dataset('csv', data_files="test.csv")["train"]
+ds = datasets.load_dataset('csv', data_files="train.csv")['train']
+
+# Split train and validation.
+ds = ds.train_test_split(test_size=0.1)
+ds['val'] = ds['test']
+del ds['test']
 
 # Preprocess dataset.
-train_ds = train_ds.remove_columns(['PassengerId', 'Name'])
+ds = ds.remove_columns(['PassengerId', 'Name'])
 
 # Naive preprocessing of nulls by removing rows with nulls.
-train_ds = train_ds.filter(lambda x: None not in x.values())
-test_ds = test_ds.filter(lambda x: None not in x.values())
+ds = ds.filter(lambda x: None not in x.values())
 
 # Split cabin column into multiple data columns.
 def split_cabin_column(row):
@@ -32,13 +43,11 @@ def split_cabin_column(row):
     row['Cabin_side'] = cabin_data[2]
     return row
 
-train_ds = train_ds.map(split_cabin_column)
-test_ds = test_ds.map(split_cabin_column)
-
-train_ds = train_ds.remove_columns(['Cabin'])
+ds = ds.map(split_cabin_column)
+ds = ds.remove_columns(['Cabin'])
 
 # Categorical encode categorical variables. TODO: Would one hot encoding work better?
-total_ds = datasets.concatenate_datasets([train_ds, test_ds])
+total_ds = datasets.concatenate_datasets([ds['train'], ds['val']])
 str_to_idx_HomePlanet = {v: i for i, v in enumerate(set(total_ds['HomePlanet']))}
 str_to_idx_CryoSleep = {v: i for i, v in enumerate(set(total_ds['CryoSleep']))}
 str_to_idx_Cabin_deck = {v: i for i, v in enumerate(set(total_ds['Cabin_deck']))}
@@ -57,11 +66,11 @@ def categorical_encode(row):
     row['Transported_int'] = str_to_idx_Transported[row['Transported']]
     return row
 
-train_ds = train_ds.map(categorical_encode)
-train_ds = train_ds.remove_columns(['CryoSleep', 'VIP'])
-train_ds = train_ds.rename_column('CryoSleep_int', 'CryoSleep')
-train_ds = train_ds.rename_column('VIP_int', 'VIP')
-train_ds = train_ds.rename_column('Transported_int', 'target')
+ds = ds.map(categorical_encode)
+ds = ds.remove_columns(['CryoSleep', 'VIP'])
+ds = ds.rename_column('CryoSleep_int', 'CryoSleep')
+ds = ds.rename_column('VIP_int', 'VIP')
+ds = ds.rename_column('Transported_int', 'target')
 
 # Convert all numerical variables into integers.
 def convert_to_int(row):
@@ -73,14 +82,15 @@ def convert_to_int(row):
     row['VRDeck_int'] = int(row['VRDeck'])
     return row
 
-train_ds = train_ds.map(convert_to_int)
-train_ds = train_ds.remove_columns(['Age', 'RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck'])
-train_ds = train_ds.rename_column('Age_int', 'Age')
-train_ds = train_ds.rename_column('RoomService_int', 'RoomService')
-train_ds = train_ds.rename_column('FoodCourt_int', 'FoodCourt')
-train_ds = train_ds.rename_column('ShoppingMall_int', 'ShoppingMall')
-train_ds = train_ds.rename_column('Spa_int', 'Spa')
-train_ds = train_ds.rename_column('VRDeck_int', 'VRDeck')
+ds = ds.map(convert_to_int)
+ds = ds.remove_columns(['Age', 'RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck'])
+ds = ds.rename_column('Age_int', 'Age')
+ds = ds.rename_column('RoomService_int', 'RoomService')
+ds = ds.rename_column('FoodCourt_int', 'FoodCourt')
+ds = ds.rename_column('ShoppingMall_int', 'ShoppingMall')
+ds = ds.rename_column('Spa_int', 'Spa')
+ds = ds.rename_column('VRDeck_int', 'VRDeck')
+
 
 # Dataloader.
 def collate_fn(batch):
@@ -106,7 +116,8 @@ def collate_fn(batch):
         target[i, 0] = row['target']
     return source, target
 
-dataloader = torch.utils.data.DataLoader(train_ds, batch_size=32, collate_fn=collate_fn)
+train_dataloader = torch.utils.data.DataLoader(ds['train'], batch_size=32, collate_fn=collate_fn)
+val_dataloader = torch.utils.data.DataLoader(ds['val'], batch_size=16, collate_fn=collate_fn)
 
 # Model.
 n_epochs = 100
@@ -114,8 +125,10 @@ model = model.TitanicModel().to(device)
 criterion = torch.nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
-for epoch in range(n_epochs):
-    for batch in tqdm(dataloader):
+for epoch in tqdm(range(n_epochs)):
+    train_loss = []
+    # Train loop.
+    for batch in train_dataloader:
         source, target = batch
         source = source.to(device)
         target = target.to(device)
@@ -125,10 +138,29 @@ for epoch in range(n_epochs):
 
         # Backward pass.
         loss = criterion(output, target)
+        train_loss.append(loss)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    print(loss)
+    # Validation loop.
+    with torch.no_grad():
+        val_loss = []
+        for batch in val_dataloader:
+
+            source, target = batch
+            source = source.to(device)
+            target = target.to(device)
+
+            # Forward pass.
+            output = model(source)
+
+            # Loss calculation.
+            loss = criterion(output, target)
+            val_loss.append(loss)
+    
+    print(f'Epoch: {epoch}, Train Loss: {torch.mean(torch.stack(train_loss))}, Validation Loss: {torch.mean(torch.stack(val_loss))}')
+    # Save model checkpoint.
+    torch.save(model.state_dict(), f'outputs/model_{epoch}.pth')
 
 
