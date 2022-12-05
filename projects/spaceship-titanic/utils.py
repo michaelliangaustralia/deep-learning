@@ -1,7 +1,18 @@
 import torch
+import datasets
+from typing import List, Dict, Tuple, Any
 
 import IPython
-def split_cabin_column(row):
+def split_cabin_column(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Split the Cabin column on a delimiter /.
+
+    Args:
+        row (Dict[str, Any]): A row from the dataset
+
+    Returns:
+        row (Dict[str, Any]): The dataset row with the Cabin column split into Cabin_deck,
+            Cabin_num and Cabin_side
+    """
     row['Cabin_deck'] = 'nan'
     row['Cabin_num'] = 0
     row['Cabin_side'] = 'nan'
@@ -12,10 +23,28 @@ def split_cabin_column(row):
         row['Cabin_side'] = str(cabin_data[2])
     return row
 
-def str_to_idx(ds, column_name):
+def str_to_idx(ds: datasets.Dataset, column_name: str) -> datasets.Dataset:
+    """Returns a dictionary mapping the unique values in a column to an index.
+    
+    Args:
+        ds (datasets.Dataset): The dataset to convert
+        column_name (str): The name of the column to convert
+        
+    Returns:
+        row (datasets.Dataset): The dataset with the column converted to an index column
+    """
     return {v: i for i, v in enumerate(set(ds[column_name]))}    
 
-def categorical_encode(row, str_to_idx_dict):
+def categorical_encode(row: Dict[str, Any], str_to_idx_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Encodes categorical variables into integer mapping.
+    
+    Args:
+        row (Dict[str, Any]): A row from the dataset
+        str_to_idx_dict (Dict[str, Dict[str, Any]]): A dictionary mapping the unique values in a column to an index
+        
+    Returns:
+        row (Dict[str, Any]): The dataset row with the categorical columns encoded
+    """
     for x in str_to_idx_dict:
         if x == 'VIP':
             row['VIP_int'] = str_to_idx_dict[x][row[x]]
@@ -27,7 +56,15 @@ def categorical_encode(row, str_to_idx_dict):
             row[x] = str_to_idx_dict[x][row[x]]
     return row
 
-def convert_to_int(row):
+def convert_to_int(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Converts numerical data to integers.
+
+    Args:
+        row (Dict[str, Any]): A row from the dataset
+
+    Returns:
+        row (Dict[str, Any]): The dataset row with the numerical columns converted to integers
+    """
     row['Age_int'] = int(float(row['Age'])) if row['Age'] != 'nan' else 0
     row['RoomService_int'] = int(float(row['RoomService'])) if row['RoomService'] != 'nan' else 0
     row['FoodCourt_int'] = int(float(row['FoodCourt'])) if row['FoodCourt'] != 'nan' else 0
@@ -36,7 +73,16 @@ def convert_to_int(row):
     row['VRDeck_int'] = int(float(row['VRDeck'])) if row['VRDeck'] != 'nan' else 0
     return row
 
-def collate_fn(batch):
+def collate_fn(batch: List[Dict[str, Any]]) -> Tuple(List[Dict[str, Any]], List[Dict[str, Any]]):
+    """Collate function for the dataloader.
+    
+    Args:
+        batch (List[Dict[str, Any]]): A list of dictionaries containing the data for a batch
+        
+    Returns:
+        source (List[Dict[str, Any]]): A list of dictionaries containing the source data for a batch
+        target (List[Dict[str, Any]]): A list of dictionaries containing the target data for a batch
+    """
     source = torch.zeros(len(batch), 13)
     target = torch.zeros(len(batch), 1)
 
@@ -58,7 +104,15 @@ def collate_fn(batch):
         target[i, 0] = row['target']
     return source, target
 
-def fill_none(row):
+def fill_none(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Fills None values with 'nan' and convert to string format.
+    
+    Args:
+        row (Dict[str, Any]): A row from the dataset
+    
+    Returns:
+        row (Dict[str, Any]): The dataset row with None values filled with 'nan'
+    """
     row['PassengerId_no_null'] = str(row['PassengerId']) if type(row['PassengerId']) != type(None) else "nan"
     row['HomePlanet_no_null'] = str(row['HomePlanet']) if type(row['HomePlanet']) != type(None) else "nan"
     row['CryoSleep_no_null'] = str(row['CryoSleep']) if type(row['CryoSleep']) != type(None) else "nan"
