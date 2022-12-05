@@ -30,14 +30,29 @@ ds = ds.train_test_split(test_size=0.1, seed=42)
 ds['val'] = ds['test']
 del ds['test']
 
+# Fill all nones.
+ds = ds.map(utils.fill_none)
+ds = ds.remove_columns(['PassengerId', 'HomePlanet', 'Cabin', 'Destination', 'CryoSleep', 'VIP', 'Age', 'RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck', 'Name'])
+
+# Remove no null from all column names
+ds = ds.rename_column('PassengerId_no_null', 'PassengerId')
+ds = ds.rename_column('HomePlanet_no_null', 'HomePlanet')
+ds = ds.rename_column('Cabin_no_null', 'Cabin')
+ds = ds.rename_column('Destination_no_null', 'Destination')
+ds = ds.rename_column('CryoSleep_no_null', 'CryoSleep')
+ds = ds.rename_column('VIP_no_null', 'VIP')
+ds = ds.rename_column('Age_no_null', 'Age')
+ds = ds.rename_column('RoomService_no_null', 'RoomService')
+ds = ds.rename_column('FoodCourt_no_null', 'FoodCourt')
+ds = ds.rename_column('ShoppingMall_no_null', 'ShoppingMall')
+ds = ds.rename_column('Spa_no_null', 'Spa')
+ds = ds.rename_column('VRDeck_no_null', 'VRDeck')
+ds = ds.rename_column('Name_no_null', 'Name')
+
 
 # Split cabin column into multiple data columns.
-ds = ds.map(utils.split_cabin_column)
+ds = ds.map(utils.split_cabin_column, num_proc=1)
 ds = ds.remove_columns(['Cabin'])
-IPython.embed()
-
-exit()
-
 
 # Categorical encode categorical variables.
 total_ds = datasets.concatenate_datasets([ds['train'], ds['val']])
@@ -59,7 +74,7 @@ ds = ds.map(utils.categorical_encode, fn_kwargs = {
         'VIP': str_to_idx_VIP,
         'Transported': str_to_idx_Transported,
     }
-    })
+    }, num_proc=1)
 
 ds = ds.remove_columns(['CryoSleep', 'VIP'])
 ds = ds.rename_column('CryoSleep_int', 'CryoSleep')
