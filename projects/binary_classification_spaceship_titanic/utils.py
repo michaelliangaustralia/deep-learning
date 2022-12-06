@@ -80,7 +80,7 @@ def collate_fn(batch: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[
         batch (List[Dict[str, Any]]): A list of dictionaries containing the data for a batch
         
     Returns:
-        row st[Dict[str, Any]]): A list of dictionaries containing the source data for a batch
+        source [Dict[str, Any]]): A list of dictionaries containing the source data for a batch
         target (List[Dict[str, Any]]): A list of dictionaries containing the target data for a batch
     """
     source = torch.zeros(len(batch), 13)
