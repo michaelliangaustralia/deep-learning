@@ -80,7 +80,7 @@ def collate_fn(batch: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[
         batch (List[Dict[str, Any]]): A list of dictionaries containing the data for a batch
         
     Returns:
-        source (List[Dict[str, Any]]): A list of dictionaries containing the source data for a batch
+        row st[Dict[str, Any]]): A list of dictionaries containing the source data for a batch
         target (List[Dict[str, Any]]): A list of dictionaries containing the target data for a batch
     """
     source = torch.zeros(len(batch), 13)
@@ -127,3 +127,28 @@ def fill_none(row: Dict[str, Any]) -> Dict[str, Any]:
     row['VRDeck_no_null'] = str(row['VRDeck']) if type(row['VRDeck']) != type(None) else "nan"
     row['Name_no_null'] = str(row['Name']) if type(row['Name']) != type(None) else "nan"
     return row
+
+def create_inference_input(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Creates the input for the inference function.
+    
+    Args:
+        row (Dict[str, Any]): A row from the dataset
+        
+    Returns:
+        source (Dict[str, Any]): The dataset row with the columns renamed and the target column removed
+    """
+    source = torch.zeros(13)
+    source[0] = row['Age']
+    source[1] = row['HomePlanet']
+    source[2] = row['CryoSleep']
+    source[3] = row['Cabin_deck']
+    source[4] = row['Cabin_num']
+    source[5] = row['Cabin_side']
+    source[6] = row['Destination']
+    source[7] = row['VIP']
+    source[8] = row['RoomService']
+    source[9] = row['FoodCourt']
+    source[10] = row['ShoppingMall']
+    source[11] = row['Spa']
+    source[12] = row['VRDeck']
+    return source
