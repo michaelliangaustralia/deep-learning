@@ -1,14 +1,32 @@
-# Third party imports.
-import torch
-import IPython
-import datasets
-
 # Native imports.
 import os
 import subprocess
 from typing import List, Dict, Tuple, Any, Optional
 
+# Third party imports.
+from comet_ml import Experiment
+import torch
+import IPython
+import datasets
+
 hf_dataset_row = datasets.arrow_dataset.Example
+
+def start_comet_ml_logging(project_name: str) -> Experiment:
+    """Starts comet logging.
+    
+    Args:
+        project_name (str): The comet project name.
+        
+    Returns:
+        experiment (Experiment): The comet experiment object.
+    """
+    with open('../../../comet_api_key.txt') as f:
+        comet_api_key = f.readline()
+        experiment = Experiment(
+            comet_api_key,
+            project_name=project_name
+        )
+    return experiment
 
 def get_device():
     """Returns the device to be used for training."""
@@ -88,4 +106,21 @@ def one_hot_encode(row: hf_dataset_row, dict_maps: Dict[str, Dict[str, Any]], co
         for k in dict_maps[column_name]:
             if k != row_value:
                 row[f'one_hot_{column_name}_{k}'] = 0
+    return row
+
+def replace_column_value(row: hf_dataset_row, column_names: List[str], fill_value: Any, replace_value: Any) -> hf_dataset_row:
+    """Replaces the value of a column in a dataset.
+
+    Args:
+        row (hf_dataset_row): The row of a dataset to replace the value of.
+        column_names (List[str]): The name of the columns to replace the values with.
+        fill_value (Any): The value to replace the column value with.
+        replace_value (Any): The value to replace in the column.
+
+    Returns:
+        row (hf_dataset_row): The row with the value replaced in the columns.
+    """
+    for column_name in column_names:
+        if row[column_name] == replace_value:
+            row[column_name] = fill_value
     return row

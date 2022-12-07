@@ -20,12 +20,21 @@ one_hot_encode_dict_map_list = []
 ds = ds.map(common_utils.one_hot_encode, fn_kwargs= {
     'dict_maps': dict_maps,
     'column_names': categorical_columns
-    }, num_proc=1)
+    }, num_proc=4)
 
 # Remove all categorical and noisy columns.
 ds = ds.remove_columns(categorical_columns)
-noisy_column = ['Id']
-ds = ds.remove_columns(noisy_column)
+noisy_columns = ['Id']
+ds = ds.remove_columns(noisy_columns)
+
+# Fill integer nulls with 0.
+integer_columns = ['LotFrontage', 'LotArea', 'YearBuilt', 'YearRemodAdd', 'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath',  'TotRmsAbvGrd', 'Fireplaces', 'GarageYrBlt', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'MoSold', 'YrSold']
+
+ds = ds.map(common_utils.replace_column_value, fn_kwargs= {
+    'column_names': integer_columns,
+    'fill_value': 0,
+    'replace_value': None,
+    }, num_proc=1)
 
 # Save to csv
 ds.save_to_disk('train_processed')

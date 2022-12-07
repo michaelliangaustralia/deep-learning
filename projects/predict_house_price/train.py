@@ -1,3 +1,8 @@
+# Native imports.
+import sys
+sys.path.append('../..') # Configuring sys path to enable imports from parent folder.
+import common.utils as common_utils
+
 # Third party imports
 import datasets
 import torch
@@ -6,10 +11,8 @@ import utils
 from tqdm import tqdm
 import IPython
 
-# Native imports.
-import sys
-sys.path.append('../..') # Configuring sys path to enable imports from parent folder.
-import common.utils as common_utils
+# Comet ML logging
+common_utils.start_comet_ml_logging('michaelliang-dev')
 
 # Create clean output folder
 common_utils.create_outputs_folder()
@@ -24,13 +27,13 @@ ds['val'] = ds['test']
 del ds['test']
 
 # Dataloader.
-train_dataloader = torch.utils.data.DataLoader(ds['train'], batch_size=1, collate_fn=utils.collate_fn)
+train_dataloader = torch.utils.data.DataLoader(ds['train'], batch_size=16, collate_fn=utils.collate_fn)
 val_dataloader = torch.utils.data.DataLoader(ds['val'], batch_size=16, collate_fn=utils.collate_fn)
 
 # Model.
 n_epochs = 1000
 model = model.HousePricePredictionModel().to(device)
-criterion = torch.nn.BCELoss()
+criterion = torch.nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
 for epoch in tqdm(range(n_epochs)):
@@ -41,12 +44,12 @@ for epoch in tqdm(range(n_epochs)):
         source = source.to(device)
         target = target.to(device)
         
-        IPython.embed()
         # Forward pass.
         output = model(source)
 
         # Backward pass.
         loss = criterion(output, target)
+
         train_loss.append(loss)
         optimizer.zero_grad()
         loss.backward()
