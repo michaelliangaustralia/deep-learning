@@ -12,4 +12,5 @@ All project specific code exists in the `projects` folder.
 - `np_rnn` - Build a RNN using numpy.
 - `np_cnn` - Build a CNN using numpy.
 - `pytorch_transformer` - Build a transformer using PyTorch.
-- `spaceship_titanic` - Binary classification Kaggle competition.
+- `binary_classification_spaceship_titanic` - Binary classification Kaggle competition.
+- `predict_house_price` - Housing price prediction Kaggle competition.
