@@ -2,6 +2,7 @@ from torch import nn
 
 import IPython
 
+
 class TitanicModel(nn.Module):
     def __init__(self):
         super().__init__()
