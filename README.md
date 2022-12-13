@@ -14,3 +14,14 @@ All project specific code exists in the `projects` folder.
 - `pytorch_transformer` - Build a transformer using PyTorch.
 - `binary_classification_spaceship_titanic` - Binary classification Kaggle competition.
 - `predict_house_price` - Housing price prediction Kaggle competition.
+- `gan_monet` - Generative Adversial Networks Kaggle competition.
+
+## Import common utils
+
+`common` contains common utils that are used across projects.
+
+```python
+import sys
+sys.path.append("../..")
+import common.utils as common_utils
+```
