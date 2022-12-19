@@ -34,8 +34,7 @@ def get_device():
 
 def create_outputs_folder():
     """Creates the outputs folder if it does not exist."""
-    if not os.path.exists("outputs"):
-        os.makedirs("outputs")
+    os.makedirs("outputs", exist_ok=True)
 
 
 def delete_outputs_folder_contents():

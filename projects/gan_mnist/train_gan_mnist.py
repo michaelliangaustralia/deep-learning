@@ -19,8 +19,6 @@ from tqdm import tqdm
 common_utils.delete_outputs_folder_contents()
 common_utils.create_outputs_folder()
 
-
-
 device = common_utils.get_device()
 lr = 3e-4
 batch_size = 32
