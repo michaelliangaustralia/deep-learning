@@ -1,5 +1,6 @@
 # Native imports.
 import sys
+
 sys.path.append("../..")  # Configuring sys path to enable imports from parent folder.
 import common.utils as common_utils
 
