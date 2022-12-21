@@ -17,7 +17,7 @@ All project specific code exists in the `projects` folder.
 - `gan_mnist` - Generative Adversial Networks using the MNIST dataset.
 - `gan_monet` - Generative Adversial Networks Kaggle competition.
 
-## Import common utils
+## Common utils
 
 `common` contains common utils that are used across projects.
 
@@ -25,4 +25,10 @@ All project specific code exists in the `projects` folder.
 import sys
 sys.path.append("../..")
 import common.utils as common_utils
+```
+
+## Comet Logging
+
+```python
+common_utils.start_comet_ml_logging("michaelliang-dev")
 ```
