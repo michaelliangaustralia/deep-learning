@@ -1,5 +1,6 @@
 # Native imports
 import sys
+
 sys.path.append("../..")
 import common.utils as common_utils
 import model
@@ -18,8 +19,6 @@ from tqdm import tqdm
 # Make output directory
 common_utils.delete_outputs_folder_contents()
 common_utils.create_outputs_folder()
-
-
 
 device = common_utils.get_device()
 lr = 3e-4
@@ -57,11 +56,15 @@ for epoch in tqdm(range(num_epochs)):
         fake = gen(noise)
 
         # Real discriminator loss.
-        disc_real = disc(real).view(-1) # values should as close to 1 as possible since they are real.
+        disc_real = disc(real).view(
+            -1
+        )  # values should as close to 1 as possible since they are real.
         lossD_real = criterion(disc_real, torch.ones_like(disc_real))
 
         # Fake discriminator loss.
-        disc_fake = disc(fake).view(-1) # values should as close to 0 as possible since they are fake.
+        disc_fake = disc(fake).view(
+            -1
+        )  # values should as close to 0 as possible since they are fake.
         lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
 
         # Combine the loss.
@@ -75,7 +78,7 @@ for epoch in tqdm(range(num_epochs)):
         # Generator.
         output = disc(fake).view(-1)
         lossG = criterion(output, torch.ones_like(output))
-        
+
         # Backward pass.
         gen.zero_grad()
         lossG.backward()
@@ -101,7 +104,7 @@ for epoch in tqdm(range(num_epochs)):
                     "Mnist Real Images", img_grid_real, global_step=step
                 )
                 step += 1
-        
+
         # Save the model.
         torch.save(gen.state_dict(), f"outputs/gen_{epoch}.pth")
         torch.save(disc.state_dict(), f"outputs/disc_{epoch}.pth")
