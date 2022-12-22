@@ -1,4 +1,4 @@
-# Deep Learning Primitives
+# Deep Learning
 
 Monorepo for all deep learning related code intended purely for educational and experimental purposes.
 
