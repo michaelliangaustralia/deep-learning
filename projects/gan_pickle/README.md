@@ -1,6 +1,6 @@
-# CycleGAN Photo to Monet Painting
+# CycleGAN Photo to Pickle (favourite dog)
 
-Kaggle competition and YouTube tutorials.
+CycleGAN that turns any photo into some resembling a dog photo.
 
 ## Resources
 - [Building our first simple GAN - YouTube](https://www.youtube.com/watch?v=OljTVUVzPpM)
