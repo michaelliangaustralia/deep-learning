@@ -16,6 +16,7 @@ All project specific code exists in the `projects` folder.
 - `predict_house_price` - Housing price prediction Kaggle competition.
 - `gan_mnist` - Generative Adversial Networks using the MNIST dataset.
 - `gan_monet` - Generative Adversial Networks Kaggle competition.
+- `stable_diffusion_2` - Stable diffusion 2 project.
 
 ## Common utils
 
