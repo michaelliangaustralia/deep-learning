@@ -18,6 +18,7 @@ All project specific code exists in the `projects` folder.
 - `gan_monet` - Generative Adversial Networks Kaggle competition.
 - `gan_pickle` - CycleGAN to turn merge any picture with the cutest dog.
 - `stable_diffusion_2` - Stable diffusion 2 project.
+- `voice_activity_detector` - Neural VAD classifying speech, noise and music.
 
 ## Common utils
 
