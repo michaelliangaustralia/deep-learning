@@ -1,4 +1,4 @@
-# Cycle GAN Photo to Monet Painting
+# CycleGAN Photo to Monet Painting
 
 Kaggle competition and YouTube tutorials.
 
